@@ -1,0 +1,29 @@
+@font-face {
+    font-family: atari;
+    src: url(./assets/atari-font.ttf);
+}
+
+body {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas{
+    position: absolute;
+    height: 90%;
+}
+
+#main{
+    margin: auto;
+}
+
+/* DEBUGGING */
+.debugging{
+    position: fixed;
+    left: 50px;
+    top: 50px;
+}

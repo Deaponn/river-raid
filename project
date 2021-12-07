@@ -1,0 +1,29 @@
+class Engine
+    createEntity: (type: string): void
+    senseCollision: (): CollisionArray
+    annouceCollision: (entity1: Entity, entity2: Entity): void
+    destroyEntity: (): boolean
+
+class Entity
+    positionX: number
+    positionY: number
+    horizontalSpeed: number
+    verticalSpeed: number
+
+class Plane extends Entity
+    speed: number
+    fuel: number
+    tiltAmount: number
+    accelerating: boolean
+    shoot: (): void
+    bullet: Bullet
+    bulletDestroyed: (): void
+    move: (where: "left" "right"): void
+
+class Renderer
+    board: HTMLCanvasElement
+    render: (entities: Entity[], distanceOffset: number): void
+
+class Bullet extends Entity
+    owner: Entity
+    

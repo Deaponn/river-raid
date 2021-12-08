@@ -29,9 +29,9 @@ export default class MovingEntity extends Entity {
         this.movingY = movingY;
     }
 
-    move(delta?: number) {
-        this.positionX += this.speedX * this.movingX;
-        if(this.movingY !== 0) this.positionY += (delta || 0);
+    move(delta: number) {
+        this.positionX += ((this.speedX * this.movingX) * (delta));
+        if(this.movingY !== 0) this.positionY += delta;
     }
 
     changeMovement(axis: "x" | "y", newValue: -1 | 0 | 1) {

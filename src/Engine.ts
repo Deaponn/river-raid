@@ -18,25 +18,15 @@ export interface Boundaries {
 }
 
 export interface EngineData {
-    player: PlayerData;
     entities: IEntity[];
     distance: number;
 }
 
-export interface PlayerData {
-    points: number;
-    lifes: number;
-    fuel: number;
-    highscore: number;
-    gameId: number;
-    bridge: number;
-}
-
 export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
-    private readonly playerData: PlayerData = { points: 0, lifes: 3, fuel: 100, highscore: 0, gameId: 1, bridge: 1 };
     private readonly entities: IEntity[];
     private readonly getSprite: (name: string, frame: number) => ImageData;
+    private readonly announcePlayerKill: (points: number) => void
     private opponents = JSON.parse(JSON.stringify(opponents));
     private entityCounter = 0;
     private distance = 0;
@@ -45,11 +35,11 @@ export default class Engine {
     private readonly debugCollisionContext: CanvasRenderingContext2D;
     private counter: number;
 
-    constructor(map: CanvasRenderingContext2D, getSprite: (name: string, frame: number) => ImageData) {
+    constructor(map: CanvasRenderingContext2D, getSprite: (name: string, frame: number) => ImageData, announcePlayerKill: (points: number) => void) {
         this.mapCollisions = map;
         this.entities = [];
         this.getSprite = getSprite;
-        this.entities.push(new Player(this.nextEntityId()));
+        this.announcePlayerKill = announcePlayerKill
 
         //DEBUGGING:
         this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 30, 20, 0, 0, 0, 0));
@@ -66,19 +56,26 @@ export default class Engine {
     }
 
     getData(): EngineData {
-        return { player: this.playerData, entities: this.entities, distance: this.distance };
+        return { entities: this.entities, distance: this.distance };
     }
 
     getDistance(): number {
         return this.distance;
     }
 
+    getPlayerAlive(): boolean{
+        return !!this.findPlayer()
+    }
+
     setDistance(newDistance: number): void {
         this.distance = newDistance;
     }
 
+    resurrectPlayer(){
+        this.entities.push(new Player(this.nextEntityId()));
+    }
+
     triggerRefresh(delta: number, input: Keys): void {
-        console.log(this.entities.length)
         this.purgeEntities();
         this.spawnEnemy(this.testNewEnemy());
         this.handleInput(delta, input);
@@ -143,15 +140,13 @@ export default class Engine {
             player.speedX = 0;
         }
         if (input[" "]?.press) this.entityShoot(player);
-        player.move(delta);
     }
 
     calculate(delta: number): void {
-        this.playerData.fuel -= delta / 50;
         this.manageCollisions();
-        this.moveEntities(delta);
+        this.moveEntities(this.findPlayer() ? delta : 0);
         this.progressAnimations(delta);
-        this.distance += delta;
+        if (this.findPlayer()) this.distance += delta;
     }
 
     nextEntityId(): number {
@@ -188,6 +183,7 @@ export default class Engine {
                     break;
                 }
                 case "player": {
+                    this.entities[i].move?.(delta);
                     break;
                 }
                 case "animation": {
@@ -204,7 +200,7 @@ export default class Engine {
     progressAnimations(delta: number) {
         for (const entity of this.entities) {
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
-            else if(["helicopter", "tank"].includes(entity.type)) entity.changeFrame()
+            else if (["helicopter", "tank"].includes(entity.type)) entity.changeFrame();
         }
     }
 
@@ -324,7 +320,7 @@ export default class Engine {
         switch (this.entities[indexToDestroy].type) {
             case "player": {
                 // handle losing here
-                this.playerData.lifes--;
+                this.createAnimatedEntity(this.entities[indexToDestroy]);
                 break;
             }
             case "bullet": {
@@ -343,6 +339,7 @@ export default class Engine {
                 break;
             }
             case "helicopter": {
+                this.announcePlayerKill(30)
                 this.createAnimatedEntity(this.entities[indexToDestroy]);
                 break;
             }

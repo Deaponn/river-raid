@@ -1,5 +1,5 @@
 import { Texture } from "../TextureManager";
-import { PlayerData } from "../Engine";
+import { PlayerData } from "../GameManager";
 
 export default class Interface {
     private readonly context: CanvasRenderingContext2D;

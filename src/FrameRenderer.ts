@@ -1,8 +1,9 @@
 import AnimationEntity from "./gameElements/components/AnimationEntity";
 import constants from "./Constants";
 import Interface from "./interfaceElements/Interface";
-import { EngineData, PlayerData } from "./Engine";
+import { EngineData } from "./Engine";
 import { IEntity } from "./gameElements/components/Entity";
+import { PlayerData } from "./GameManager";
 import { Textures } from "./TextureManager";
 
 export default class FrameRenderer {
@@ -28,10 +29,10 @@ export default class FrameRenderer {
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
     }
 
-    draw(data: EngineData) {
+    draw(engineData: EngineData, playerData: PlayerData) {
         this.context.beginPath();
-        this.drawInterface(data.player);
-        this.drawEntities(data.entities, data.distance);
+        this.drawInterface(playerData);
+        this.drawEntities(engineData.entities, engineData.distance);
     }
 
     drawMap(distance: number) {

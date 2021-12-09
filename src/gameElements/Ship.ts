@@ -1,13 +1,12 @@
 import SAMEntity from "./components/SAMEntity";
 import { MovingIndicator } from "./components/MovingEntity";
 
-const width = 30
-const height = 20
+const width = 64
+const height = 16
 
-export class Helicopter extends SAMEntity {
-    readonly type = "helicopter";
+export class Ship extends SAMEntity {
+    readonly type = "ship";
     private currentMovingFrame = 0
-    private counter = 0
     constructor(
         id: number,
         positionX: number,
@@ -18,15 +17,7 @@ export class Helicopter extends SAMEntity {
         movingY: MovingIndicator
     ) {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
-        this.rightDirection = 2;
+        this.rightDirection = 1;
         this.currentAnimationFrame = (this.movingX === -1 ? 0 : 2) + this.currentMovingFrame;
-    }
-
-    override changeFrame(){
-        this.counter++
-        if(this.counter < 20) return
-        this.counter = 0
-        this.currentMovingFrame = this.currentMovingFrame === 1 ? 0 : 1
-        this.currentAnimationFrame = (this.movingX === -1 ? 0 : 2) + this.currentMovingFrame
     }
 }

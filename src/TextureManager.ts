@@ -1,3 +1,5 @@
+import { Boundaries } from "./Engine";
+
 export interface Texture {
     width: number;
     height: number;
@@ -73,23 +75,23 @@ export default class TextureManager {
         this.interfaceSourceList = [
             {
                 path: "fuel_indicator.png",
-                sprites: 1
+                sprites: 1,
             },
             {
                 path: "interface.png",
-                sprites: 1
+                sprites: 1,
             },
             {
                 path: "life.png",
-                sprites: 1
+                sprites: 1,
             },
             {
                 path: "digits_black.png",
-                sprites: 10
+                sprites: 10,
             },
             {
                 path: "digits_yellow.png",
-                sprites: 10
+                sprites: 10,
             },
         ];
         this.textures = {};
@@ -122,14 +124,15 @@ export default class TextureManager {
                     frameWidth: canvas.width / source.sprites,
                     sourceCanvas: canvas,
                 };
-                resolve()
+                resolve();
             };
         });
     }
 
-    getSprite(name: string, frame: number): ImageData{
-        const texture = this.textures[name]
-        const context = texture.sourceCanvas.getContext('2d') as CanvasRenderingContext2D
-        return context.getImageData(frame * texture.frameWidth, 0, texture.frameWidth, texture.height)
+    getSprite(name: string, frame: number, boundaries: Boundaries): ImageData {
+        if (name === "animation") return (this.textures.helicopter.sourceCanvas.getContext("2d") as CanvasRenderingContext2D).getImageData(-1, -1, 1, 1);
+        const texture = this.textures[name];
+        const context = texture.sourceCanvas.getContext("2d") as CanvasRenderingContext2D;
+        return context.getImageData(frame * texture.frameWidth, 0, texture.frameWidth, texture.height);
     }
 }

@@ -1,5 +1,5 @@
 export interface Opponent {
-    type: "helicopter";
+    type: "helicopter" | "ship" | "balloon" | "plane";
     positionX: number;
     positionY: number;
     direction: -1 | 1; // left | right
@@ -17,7 +17,7 @@ const opponents: Opponent[] = [
         shooting: true,
     },
     {
-        type: "helicopter",
+        type: "ship",
         positionX: 600,
         positionY: 1200,
         direction: 1,
@@ -25,12 +25,12 @@ const opponents: Opponent[] = [
         shooting: false,
     },
     {
-        type: "helicopter",
+        type: "plane",
         positionX: 320,
         positionY: 1400,
         direction: -1,
-        moving: false,
-        shooting: true,
+        moving: true,
+        shooting: false,
     },
 ];
 

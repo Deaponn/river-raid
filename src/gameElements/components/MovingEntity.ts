@@ -31,7 +31,7 @@ export default class MovingEntity extends Entity {
 
     move(delta: number) {
         this.positionX += ((this.speedX * this.movingX) * (delta));
-        if(this.movingY !== 0) this.positionY += delta;
+        if(this.movingY !== 0) this.positionY += delta * this.speedY;
     }
 
     changeMovement(axis: "x" | "y", newValue: -1 | 0 | 1) {

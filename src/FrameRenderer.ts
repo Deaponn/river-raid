@@ -35,7 +35,7 @@ export default class FrameRenderer {
         this.drawEntities(engineData.entities, engineData.distance);
     }
 
-    drawMap(distance: number) {
+    drawMap(distance: number, offset = 0) {
         this.context.clearRect(0, 0, constants.WIDTH, constants.HEIGHT);
         this.context.drawImage(
             this.textures.map.sourceCanvas,
@@ -44,10 +44,12 @@ export default class FrameRenderer {
             constants.WIDTH,
             constants.HEIGHT,
             0,
-            0,
+            offset,
             constants.WIDTH,
             constants.HEIGHT
         );
+        this.context.fillStyle = "black"
+        this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT)
     }
 
     drawInterface(data: PlayerData) {
@@ -65,7 +67,7 @@ export default class FrameRenderer {
 
     drawEntity(entity: IEntity | AnimationEntity, distance: number) {
         const entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity]
-        this.context.fillStyle = "rgba(255,0,255,0.7)";
+        this.context.fillStyle = "rgba(255,0,255,0.3)";
         if (entityTexture) {
             this.context.drawImage(
                 entityTexture.sourceCanvas,
@@ -78,12 +80,12 @@ export default class FrameRenderer {
                 entityTexture.frameWidth,
                 entityTexture.height
             );
-            // this.context.fillRect(
-            //     Math.round(entity.positionX) - entity.width / 2,
-            //     600 - Math.round(entity.positionY - distance - entity.height / 2) + (entity.hitboxOffsetY || 0),
-            //     entity.width,
-            //     entity.height
-            // );
+            this.context.fillRect(
+                Math.round(entity.positionX) - entity.width / 2,
+                600 - Math.round(entity.positionY - distance - entity.height / 2) + (entity.hitboxOffsetY || 0),
+                entity.width,
+                entity.height
+            );
         }
         else {
             console.log("not drawing entity: ", entity)

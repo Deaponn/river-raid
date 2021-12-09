@@ -1,14 +1,17 @@
 import Bullet from "./gameElements/Bullet";
 import constants from "./Constants";
 import Entity, { IEntity } from "./gameElements/components/Entity";
-import opponents, { Opponent } from "./opponents";
+import { Opponent } from "./opponents";
 import Player from "./gameElements/Player";
 import PlayerBullet from "./gameElements/PlayerBullet";
 import SAMEntity from "./gameElements/components/SAMEntity";
+import { Balloon } from "./gameElements/Balloon";
 import { Helicopter } from "./gameElements/Helicopter";
+import { Ship } from "./gameElements/Ship";
 import { Keys } from "./InputManager";
-import { MovingIndicator } from "./gameElements/components/MovingEntity";
+import MovingEntity, { MovingIndicator } from "./gameElements/components/MovingEntity";
 import AnimationEntity from "./gameElements/components/AnimationEntity";
+import { Plane } from "./gameElements/Plane";
 
 export interface Boundaries {
     startX: number;
@@ -22,12 +25,24 @@ export interface EngineData {
     distance: number;
 }
 
+const deathFrames = [
+    [1, 2, 3, 2],
+    [2, 3, 4, 3],
+    [4, 5, 6, 5],
+    [3, 4, 5, 4],
+];
+
+const omitTerrainCollision = ["plane", "animation"];
+const destroyOnCollision = ["player", "playerBullet", "bullet"];
+const bounceOnCollision = ["helicopter", "ship", "balloon"];
+const stopOnCollision = ["tank"];
+
 export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
     private readonly entities: IEntity[];
-    private readonly getSprite: (name: string, frame: number) => ImageData;
-    private readonly announcePlayerKill: (points: number) => void
-    private opponents = JSON.parse(JSON.stringify(opponents));
+    private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
+    private readonly announcePlayerKill: (entityType: string) => void;
+    private opponents: Opponent[];
     private entityCounter = 0;
     private distance = 0;
 
@@ -35,14 +50,20 @@ export default class Engine {
     private readonly debugCollisionContext: CanvasRenderingContext2D;
     private counter: number;
 
-    constructor(map: CanvasRenderingContext2D, getSprite: (name: string, frame: number) => ImageData, announcePlayerKill: (points: number) => void) {
+    constructor(
+        map: CanvasRenderingContext2D,
+        initialOpponents: Opponent[],
+        getSprite: (name: string, frame: number) => ImageData,
+        announcePlayerKill: (entityType: string) => void
+    ) {
         this.mapCollisions = map;
         this.entities = [];
+        this.opponents = initialOpponents;
         this.getSprite = getSprite;
-        this.announcePlayerKill = announcePlayerKill
+        this.announcePlayerKill = announcePlayerKill;
 
         //DEBUGGING:
-        this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 30, 20, 0, 0, 0, 0));
+        this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
 
         this.counter = 10;
         const canvas = document.createElement("canvas") as HTMLCanvasElement;
@@ -63,43 +84,45 @@ export default class Engine {
         return this.distance;
     }
 
-    getPlayerAlive(): boolean{
-        return !!this.findPlayer()
+    getPlayerAlive(): boolean {
+        return !!this.findPlayer();
     }
 
     setDistance(newDistance: number): void {
         this.distance = newDistance;
     }
 
-    resurrectPlayer(){
-        this.entities.push(new Player(this.nextEntityId()));
+    beginGame(enemiesToSpawn: Opponent[]) {
+        this.opponents = enemiesToSpawn;
+        this.entities.length = 0;
+        this.entities.push(new Player(this.nextEntityId(), this.distance));
     }
 
     triggerRefresh(delta: number, input: Keys): void {
         this.purgeEntities();
         this.spawnEnemy(this.testNewEnemy());
-        this.handleInput(delta, input);
+        this.handleInput(input);
         this.calculate(delta);
     }
 
     purgeEntities(): void {
         for (let i = 0; i < this.entities.length; i++) {
             if (this.entities[i].positionY < this.distance + 100) {
-                this.destroyEntity(this.entities[i].id);
+                this.destroyEntity(this.entities[i].id, true);
             }
         }
     }
 
-    getEntityById(id: number): IEntity {
-        return this.entities[
-            this.entities.findIndex((entity: IEntity) => {
-                return entity.id === id;
-            })
-        ];
+    getEntityById(id: number): IEntity | null {
+        const index = this.entities.findIndex((entity: IEntity) => {
+            return entity.id === id;
+        });
+        if (index !== -1) return this.entities[index] as IEntity;
+        else return null;
     }
 
     testNewEnemy(): Opponent | null {
-        if (this.opponents.length > 0 && this.distance + 700 > this.opponents[0].positionY) return this.opponents.shift();
+        if (this.opponents.length > 0 && this.distance + 700 > this.opponents[0].positionY) return this.opponents.shift()!;
         else return null;
     }
 
@@ -107,9 +130,24 @@ export default class Engine {
         if (!data) return;
         switch (data.type) {
             case "helicopter": {
-                const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, 30, 20, data.moving ? 1 : 0, 0, data.direction, 0);
+                const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
                 this.entities.push(helicopter);
                 if (data.shooting) this.entityShoot(helicopter);
+                break;
+            }
+            case "ship": {
+                const ship = new Ship(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                this.entities.push(ship);
+                break;
+            }
+            case "balloon": {
+                const balloon = new Balloon(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                this.entities.push(balloon);
+                break;
+            }
+            case "plane": {
+                const plane = new Plane(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 5 : 0, 0, data.direction, 0);
+                this.entities.push(plane);
                 break;
             }
             default: {
@@ -118,13 +156,13 @@ export default class Engine {
         }
     }
 
-    createAnimatedEntity(entity: IEntity) {
+    createAnimatedEntity(entity: IEntity, length: 0 | 1 | 2 | 3) {
         this.entities.push(
-            new AnimationEntity(this.nextEntityId(), entity.positionX, entity.positionY, entity.width, entity.height, entity.type, [4, 5, 6, 5])
+            new AnimationEntity(this.nextEntityId(), entity.positionX, entity.positionY, entity.width, entity.height, entity.type, deathFrames[length])
         );
     }
 
-    handleInput(delta: number, input: Keys): void {
+    handleInput(input: Keys): void {
         const player = this.findPlayer();
         if (!player) return;
         if (input.a?.press) {
@@ -140,13 +178,26 @@ export default class Engine {
             player.speedX = 0;
         }
         if (input[" "]?.press) this.entityShoot(player);
+        if (input.w?.press) player.speedY = 2;
+        else player.speedY = 1;
     }
 
     calculate(delta: number): void {
+        const player = this.findPlayer();
         this.manageCollisions();
-        this.moveEntities(this.findPlayer() ? delta : 0);
-        this.progressAnimations(delta);
-        if (this.findPlayer()) this.distance += delta;
+        this.updateEntities(delta);
+        if (player && player.speedY === 1) this.distance += delta;
+        else this.distance += delta * (player?.speedY || 0);
+    }
+
+    updateEntities(delta: number) {
+        const player = this.findPlayer();
+        for (const entity of this.entities) {
+            if (entity.type !== "animation" && !!player) entity.move?.(delta); // moving
+            if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
+            // updating death animation
+            else if (["helicopter", "tank"].includes(entity.type)) entity.changeFrame(); // updating move animation
+        }
     }
 
     nextEntityId(): number {
@@ -158,57 +209,14 @@ export default class Engine {
         const index = this.entities.findIndex((entity: Entity) => {
             return entity.type === "player";
         });
-        if (index !== -1)
-            return this.entities[
-                this.entities.findIndex((entity: Entity) => {
-                    return entity.type === "player";
-                })
-            ] as Player;
+        if (index !== -1) return this.entities[index] as Player;
         else return null;
     }
 
-    moveEntities(delta: number): void {
-        for (let i = 0; i < this.entities.length; i++) {
-            switch (this.entities[i].type) {
-                case "bullet": {
-                    this.entities[i].move?.(delta);
-                    break;
-                }
-                case "playerBullet": {
-                    this.entities[i].move?.(delta);
-                    break;
-                }
-                case "helicopter": {
-                    this.entities[i].move?.(delta);
-                    break;
-                }
-                case "player": {
-                    this.entities[i].move?.(delta);
-                    break;
-                }
-                case "animation": {
-                    break;
-                }
-                default: {
-                    console.log("invalid entity to move: ", this.entities[i].type);
-                }
-            }
-            // if (this.entities[i].type !== "player") this.entities[i].move?.();
-        }
-    }
-
-    progressAnimations(delta: number) {
-        for (const entity of this.entities) {
-            if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
-            else if (["helicopter", "tank"].includes(entity.type)) entity.changeFrame();
-        }
-    }
-
     entityShoot(who: SAMEntity): void {
-        if (this.entities.findIndex((entity) => entity.id === who.id) === -1) return;
+        if (!this.getEntityById(who.id)) return;
         const bullet = who.createBullet(this.nextEntityId());
         if (bullet) this.entities.push(bullet);
-        // else console.log(this.entities[this.entities.length - 1])
     }
 
     manageCollisions(): void {
@@ -220,19 +228,24 @@ export default class Engine {
         for (const entity of this.entities) {
             const boundaries: Boundaries = this.getEntityBoundaries(entity);
             const collisionArea = this.mapCollisions?.getImageData(boundaries.startX, boundaries.startY, boundaries.lengthX, boundaries.lengthY) as ImageData;
-            if (this.checkTerrainCollision(collisionArea)) {
+            if (
+                !omitTerrainCollision.includes(entity.type) &&
+                this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries), entity.type === "player")
+            ) {
                 this.handleTerrainCollision(entity);
             }
-            if (this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries)) {
-                // this.destroyEntity(player.bulletId);
+            const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
+            if (entityCollision.collision) {
+                this.destroyEntity(entityCollision.with);
                 this.destroyEntity(entity.id);
             }
         }
     }
 
-    checkTerrainCollision(area: ImageData): boolean {
+    checkTerrainCollision(area: ImageData, entityFrame: ImageData, deeperCheck: boolean): boolean {
+        if (area.data.length !== entityFrame.data.length) this.debugCollisionContext.putImageData(entityFrame, 0, 0);
         for (let i = 0; i < area.data.length; i += 4) {
-            if (area.data[i + 3] !== 3) return true;
+            if (area.data[i + 3] !== 3 && (!deeperCheck || entityFrame.data[i + 3] !== 0)) return true;
         }
         return false;
     }
@@ -246,11 +259,14 @@ export default class Engine {
         playerBullet: PlayerBullet,
         playerBoundaries: Boundaries,
         playerBulletBoundaries: Boundaries
-    ): boolean {
-        if (["player", "playerBullet", "animation"].includes(entity.type)) return false;
-        if (this.collisionBetweenBoundaries(playerBoundaries, boundaries) && this.collisionBetweenSprites(player, entity)) return true;
-        if (this.collisionBetweenBoundaries(playerBulletBoundaries, boundaries) && this.collisionBetweenSprites(playerBullet, entity)) return true;
-        else return false;
+    ): { collision: false; with?: number } | { collision: true; with: number } {
+        if (["player", "playerBullet", "animation"].includes(entity.type)) return { collision: false };
+        if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
+            return { collision: this.collisionBetweenSprites(player, entity), with: player.id };
+        }
+        if (playerBullet && this.collisionBetweenBoundaries(playerBulletBoundaries, boundaries)) {
+            return { collision: this.collisionBetweenSprites(playerBullet, entity), with: playerBullet.id };
+        } else return { collision: false };
     }
 
     collisionBetweenBoundaries(first: Boundaries, second: Boundaries): boolean {
@@ -267,10 +283,10 @@ export default class Engine {
     }
 
     collisionBetweenSprites(playerOrHisBullet: Player | PlayerBullet, entity: IEntity): boolean {
-        const firstSprite = this.getSprite(playerOrHisBullet.type, playerOrHisBullet.currentAnimationFrame);
-        const secondSprite = this.getSprite(entity.type, entity.currentAnimationFrame);
-        this.debugCollisionContext.putImageData(secondSprite, 0, 0);
-        this.debugCollisionContext.putImageData(firstSprite, 20, 15);
+        // const firstSprite = this.getSprite(playerOrHisBullet.type, playerOrHisBullet.currentAnimationFrame);
+        // const secondSprite = this.getSprite(entity.type, entity.currentAnimationFrame);
+        // this.debugCollisionContext.putImageData(secondSprite, 0, 0);
+        // this.debugCollisionContext.putImageData(firstSprite, 20, 15);
         return true;
     }
 
@@ -285,42 +301,24 @@ export default class Engine {
     }
 
     handleTerrainCollision(entity: Entity) {
-        switch (entity.type) {
-            case "player": {
-                this.destroyEntity(entity.id);
-                break;
-            }
-            case "bullet": {
-                this.destroyEntity(entity.id);
-                break;
-            }
-            case "playerBullet": {
-                console.log("niszcze bullet");
-                this.destroyEntity(entity.id);
-                break;
-            }
-            case "helicopter": {
-                const helicopter = entity as Helicopter;
-                helicopter.changeMovement("x", -helicopter.movingX as MovingIndicator);
-                break;
-            }
-            case "animation": {
-                break;
-            }
-            default: {
-                console.log("unknown entity: ", entity.type);
-            }
+        if (destroyOnCollision.includes(entity.type)) this.destroyEntity(entity.id);
+        if (bounceOnCollision.includes(entity.type)) {
+            const helicopter = entity as MovingEntity;
+            helicopter.changeMovement("x", -helicopter.movingX as MovingIndicator);
+        }
+        if (stopOnCollision.includes(entity.type)) {
+            console.log("here should tank stop");
         }
     }
 
-    destroyEntity(id: number) {
+    destroyEntity(id: number, noPoints = false) {
         const indexToDestroy = this.entities.findIndex((entity: Entity) => {
             return entity.id === id;
         });
         switch (this.entities[indexToDestroy].type) {
             case "player": {
                 // handle losing here
-                this.createAnimatedEntity(this.entities[indexToDestroy]);
+                this.createAnimatedEntity(this.entities[indexToDestroy], 3);
                 break;
             }
             case "bullet": {
@@ -339,8 +337,23 @@ export default class Engine {
                 break;
             }
             case "helicopter": {
-                this.announcePlayerKill(30)
-                this.createAnimatedEntity(this.entities[indexToDestroy]);
+                if (!noPoints) this.announcePlayerKill("helicopter");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 2);
+                break;
+            }
+            case "ship": {
+                if (!noPoints) this.announcePlayerKill("ship");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 1);
+                break;
+            }
+            case "balloon": {
+                if (!noPoints) this.announcePlayerKill("balloon");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 0);
+                break;
+            }
+            case "plane": {
+                if (!noPoints) this.announcePlayerKill("plane");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 1);
                 break;
             }
             default: {

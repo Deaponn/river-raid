@@ -104,6 +104,7 @@ export default class Engine {
 
     beginGame(enemiesToSpawn: Opponent[]) {
         this.opponents = enemiesToSpawn;
+        console.log(this.entities, this.opponents)
         this.entities.length = 0;
         this.entities.push(new Player(this.nextEntityId(), this.distance));
     }
@@ -138,6 +139,7 @@ export default class Engine {
 
     spawnEnemy(data: Opponent | null): void {
         if (!data) return;
+        console.log("spawning enemy: ", data)
         switch (data.type) {
             case "helicopter": {
                 const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
@@ -280,9 +282,9 @@ export default class Engine {
     }
 
     checkTerrainCollision(area: ImageData, entityFrame: ImageData, deeperCheck: boolean): boolean {
-        if (area.data.length !== entityFrame.data.length) this.debugCollisionContext.putImageData(entityFrame, 0, 0);
+        // if (area.data.length !== entityFrame.data.length) this.debugCollisionContext.putImageData(entityFrame, 0, 0);
         for (let i = 0; i < area.data.length; i += 4) {
-            if (area.data[i + 3] !== 3 && (!deeperCheck || (area.data[i + 1] >= 60 && entityFrame.data[i + 3] !== 0))) return true;
+            if (area.data[i + 3] !== 3 && (!deeperCheck || ((area.data[i + 1] >= 60 || area.data[i] === 0) && entityFrame.data[i + 3] !== 0))) return true; // #003900
         }
         return false;
     }

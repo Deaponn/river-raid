@@ -117,10 +117,11 @@ export default class GameManager {
     }
 
     startTheGame() {
+        const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[]
         this.previousTimestamp = null;
         this.engine.beginGame(
-            JSON.parse(JSON.stringify(opponents)).filter((enemy: Opponent) => {
-                return enemy.positionY > this.currentBridgeDistance;
+            enemiesCopy.filter((enemy: Opponent) => {
+                return enemy.positionY - 218 > this.currentBridgeDistance;
             })
         );
         this.draw(0);

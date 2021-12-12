@@ -50,8 +50,72 @@ const opponents: Opponent[] = [
     },
     {
         type: "bridge",
-        positionX: 420,
-        positionY: 3616,
+        positionX: 406,
+        positionY: 3533, // 3316
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 378,
+        positionY: 6393, // 6176 = 217
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 410,
+        positionY: 9245, // 9028 = 217
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 373,
+        positionY: 12082, // 11866 = 216
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 363,
+        positionY: 14914, // 14698 = 216
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 426,
+        positionY: 17770, // 17554 = 216
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 442,
+        positionY: 20622, // 20404 = 218
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 433,
+        positionY: 23474, // 23258 = 216
+        direction: 1,
+        moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridge",
+        positionX: 385,
+        positionY: 26330, // 26112 = 218
         direction: 1,
         moving: false,
         shooting: false,

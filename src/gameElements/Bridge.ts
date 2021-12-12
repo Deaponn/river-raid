@@ -1,8 +1,8 @@
 import MovingEntity from "./components/MovingEntity";
 import { MovingIndicator } from "./components/MovingEntity";
 
-const width = 113
-const height = 34
+const width = 140
+const height = 42
 
 export class Bridge extends MovingEntity {
     readonly type = "bridge";

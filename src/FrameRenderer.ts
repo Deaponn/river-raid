@@ -81,12 +81,12 @@ export default class FrameRenderer {
                 entityTexture.frameWidth,
                 entityTexture.height
             );
-            this.context.fillRect(
-                Math.round(entity.positionX) - entity.width / 2,
-                600 - Math.round(entity.positionY - distance - entity.height / 2) + (entity.hitboxOffsetY || 0),
-                entity.width,
-                entity.height
-            );
+            // this.context.fillRect(
+            //     Math.round(entity.positionX) - entity.width / 2,
+            //     600 - Math.round(entity.positionY - distance - entity.height / 2) + (entity.hitboxOffsetY || 0),
+            //     entity.width,
+            //     entity.height
+            // );
         }
         else {
             console.log("not drawing entity: ", entity)

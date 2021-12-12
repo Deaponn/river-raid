@@ -23,5 +23,6 @@ export default class AnimationEntity extends Entity implements IEntity, IAnimati
     updateState(delta: number){
         this.currentTime += delta
         this.currentAnimationFrame = this.steps[Math.floor(this.currentTime / this.frameLength)]
+        if(Math.floor(this.currentTime / this.frameLength) > this.steps.length - 1) this.lifetime = 0
     }
 }

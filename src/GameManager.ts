@@ -2,7 +2,6 @@ import TextureManager from "./TextureManager";
 import FrameRenderer from "./FrameRenderer";
 import Engine from "./Engine";
 import opponents, { Opponent } from "./opponents";
-import constants from "./Constants";
 import { Keys } from "./InputManager";
 
 export interface PlayerData {
@@ -48,6 +47,9 @@ export default class GameManager {
             this.textureManager.getSprite.bind(this.textureManager),
             (entityType: string) => {
                 this.playerKilled(entityType);
+            },
+            () => {
+                this.refillFuel();
             }
         );
         this.frameRenderer.blackout();
@@ -77,10 +79,26 @@ export default class GameManager {
                 this.playerData.points += 100;
                 break;
             }
+            case "tank": {
+                this.playerData.points += 250;
+                break;
+            }
+            case "fuel": {
+                this.playerData.points += 80;
+                break;
+            }
+            case "bridge": {
+                this.playerData.points += 500;
+                break;
+            }
             default: {
                 console.log("unknown entity killed: ", entityType);
             }
         }
+    }
+
+    refillFuel() {
+        this.playerData.fuel = Math.min(100, this.playerData.fuel += 0.2)
     }
 
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
@@ -113,16 +131,8 @@ export default class GameManager {
         if (!this.previousTimestamp) this.previousTimestamp = timestamp;
         const delta = timestamp - this.previousTimestamp;
         this.previousTimestamp = timestamp;
-        if (!this.playerDeathTimestamp) {
-            if (this.pressedKeys.w?.press) this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 250);
-            else this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 500);
-        }
-        if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
-        if(this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++
         this.checkIfPlayerDied(timestamp);
-        this.frameRenderer.drawMap(this.engine.getDistance());
-        this.engine.triggerRefresh(delta / 10, this.pressedKeys);
-        this.frameRenderer.draw(this.engine.getData(), this.playerData);
+        this.frameUpdate(delta);
         if (!this.playerDeathTimestamp || timestamp - this.playerDeathTimestamp < 1000) {
             requestAnimationFrame((timestamp) => {
                 this.draw(timestamp);
@@ -134,11 +144,26 @@ export default class GameManager {
         }
     }
 
+    frameUpdate(delta: number) {
+        if (!this.playerDeathTimestamp) {
+            if (this.pressedKeys.w?.press) this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 250);
+            else this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 625);
+        }
+        for (let i = 0; i < this.bridgeDistances.length; i++) {
+            if (this.bridgeDistances[i] > this.engine.getDistance()) break;
+            else this.playerData.bridge = i + 1;
+        }
+        if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
+        if (this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++;
+        this.frameRenderer.drawMap(this.engine.getDistance());
+        this.engine.triggerRefresh(delta / 10, this.pressedKeys);
+        this.frameRenderer.draw(this.engine.getData(), this.playerData);
+    }
+
+    // below method works only once, on player death
     checkIfPlayerDied(timestamp: number) {
         if (!this.playerDeathTimestamp && !this.engine.getPlayerAlive()) {
-            this.currentBridgeDistance = this.bridgeDistances.reduce((previousValue, currentValue) => {
-                return currentValue < this.engine.getDistance() ? currentValue : previousValue;
-            });
+            this.currentBridgeDistance = this.bridgeDistances[this.playerData.bridge - 1];
             this.slidingStartPoint = this.currentBridgeDistance - 458;
             this.playerDeathTimestamp = timestamp;
             this.playerData.lifes--;

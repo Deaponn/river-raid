@@ -6,6 +6,7 @@ export interface IEntity {
     width: number;
     height: number;
     currentAnimationFrame: number;
+    lifetime?: number
     hitboxOffsetY?: number
     move?: (delta?: number) => void;
     changeFrame: () => void
@@ -19,6 +20,7 @@ export default class Entity implements IEntity {
     width: number;
     height: number;
     currentAnimationFrame = 0;
+    lifetime?: number
     constructor(id: number, positionX: number, positionY: number, width: number, height: number) {
         this.id = id;
         this.positionX = positionX;

@@ -48,10 +48,6 @@ export default class TextureManager {
                 sprites: 1,
             },
             {
-                path: "map_collisions.png",
-                sprites: 1,
-            },
-            {
                 path: "plane.png",
                 sprites: 5,
             },

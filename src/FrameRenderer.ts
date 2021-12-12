@@ -66,7 +66,8 @@ export default class FrameRenderer {
     }
 
     drawEntity(entity: IEntity | AnimationEntity, distance: number) {
-        const entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity]
+        let entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity]
+        if(entity.type === "tankBullet") entityTexture = this.textures.bullet
         this.context.fillStyle = "rgba(255,0,255,0.3)";
         if (entityTexture) {
             this.context.drawImage(

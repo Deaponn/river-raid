@@ -14,7 +14,8 @@ const bulletHeight = 10;
 
 export default class Player extends SAMEntity {
     readonly type = "player";
-    readonly maxSpeed = 3
+    readonly maxSpeedX = 3
+    readonly maxSpeedY = 2.5
     speedY = 2
     bulletId: number
     hasBullet: boolean = false;

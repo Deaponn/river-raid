@@ -12,6 +12,10 @@ import { Keys } from "./InputManager";
 import MovingEntity, { MovingIndicator } from "./gameElements/components/MovingEntity";
 import AnimationEntity from "./gameElements/components/AnimationEntity";
 import { Plane } from "./gameElements/Plane";
+import { Tank } from "./gameElements/Tank";
+import TankBullet from "./gameElements/TankBullet";
+import { Fuel } from "./gameElements/Fuel";
+import { Bridge } from "./gameElements/Bridge";
 
 export interface Boundaries {
     startX: number;
@@ -32,16 +36,20 @@ const deathFrames = [
     [3, 4, 5, 4],
 ];
 
-const omitTerrainCollision = ["plane", "animation"];
+const refillFuelOnCollision = ["fuel"];
+const omitCollisionWithPlayer = ["player", "playerBullet", "animation", "tankBullet"];
+const omitTerrainCollision = ["plane", "animation", "tank", "tankBullet"];
 const destroyOnCollision = ["player", "playerBullet", "bullet"];
 const bounceOnCollision = ["helicopter", "ship", "balloon"];
-const stopOnCollision = ["tank"];
+const stopOnNoCollision = ["tank"];
+const animatedMovement = ["helicopter", "tank"];
 
 export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
     private readonly entities: IEntity[];
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
+    private readonly refillFuel: () => void;
     private opponents: Opponent[];
     private entityCounter = 0;
     private distance = 0;
@@ -54,13 +62,15 @@ export default class Engine {
         map: CanvasRenderingContext2D,
         initialOpponents: Opponent[],
         getSprite: (name: string, frame: number) => ImageData,
-        announcePlayerKill: (entityType: string) => void
+        announcePlayerKill: (entityType: string) => void,
+        refillFuel: () => void
     ) {
         this.mapCollisions = map;
         this.entities = [];
         this.opponents = initialOpponents;
         this.getSprite = getSprite;
         this.announcePlayerKill = announcePlayerKill;
+        this.refillFuel = refillFuel;
 
         //DEBUGGING:
         this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
@@ -106,9 +116,9 @@ export default class Engine {
     }
 
     purgeEntities(): void {
-        for (let i = 0; i < this.entities.length; i++) {
-            if (this.entities[i].positionY < this.distance + 100) {
-                this.destroyEntity(this.entities[i].id, true);
+        for (const entity of this.entities) {
+            if (entity.positionY < this.distance + 100 || entity.lifetime === 0) {
+                this.destroyEntity(entity.id, true);
             }
         }
     }
@@ -145,9 +155,24 @@ export default class Engine {
                 this.entities.push(balloon);
                 break;
             }
+            case "bridge": {
+                const bridge = new Bridge(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                this.entities.push(bridge);
+                break;
+            }
             case "plane": {
                 const plane = new Plane(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 5 : 0, 0, data.direction, 0);
                 this.entities.push(plane);
+                break;
+            }
+            case "tank": {
+                const tank = new Tank(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                this.entities.push(tank);
+                break;
+            }
+            case "fuel": {
+                const fuel = new Fuel(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                this.entities.push(fuel);
                 break;
             }
             default: {
@@ -156,9 +181,10 @@ export default class Engine {
         }
     }
 
-    createAnimatedEntity(entity: IEntity, length: 0 | 1 | 2 | 3) {
+    createAnimatedEntity(entity: IEntity, frames: 0 | 1 | 2 | 3 | number[]) {
+        const animationFrames = typeof frames === "number" ? deathFrames[frames] : frames;
         this.entities.push(
-            new AnimationEntity(this.nextEntityId(), entity.positionX, entity.positionY, entity.width, entity.height, entity.type, deathFrames[length])
+            new AnimationEntity(this.nextEntityId(), entity.positionX, entity.positionY, entity.width, entity.height, entity.type, animationFrames)
         );
     }
 
@@ -167,19 +193,20 @@ export default class Engine {
         if (!player) return;
         if (input.a?.press) {
             player.changeMovement("x", -1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeed);
+            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeedX);
         }
         if (input.d?.press) {
             player.changeMovement("x", 1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeed);
+            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeedX);
         }
         if ((input.a?.press && input.d?.press) || (!input.a?.press && !input.d?.press)) {
             player.changeMovement("x", 0);
             player.speedX = 0;
         }
         if (input[" "]?.press) this.entityShoot(player);
-        if (input.w?.press) player.speedY = 2;
-        else player.speedY = 1;
+        if (input.w?.press) {
+            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 30, player.maxSpeedY);
+        } else player.speedY = 1;
     }
 
     calculate(delta: number): void {
@@ -196,7 +223,7 @@ export default class Engine {
             if (entity.type !== "animation" && !!player) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
-            else if (["helicopter", "tank"].includes(entity.type)) entity.changeFrame(); // updating move animation
+            else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
         }
     }
 
@@ -234,10 +261,20 @@ export default class Engine {
             ) {
                 this.handleTerrainCollision(entity);
             }
+            if (
+                stopOnNoCollision.includes(entity.type) &&
+                this.checkWaterCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries))
+            ) {
+                this.handleTerrainCollision(entity);
+            }
             const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
             if (entityCollision.collision) {
-                this.destroyEntity(entityCollision.with);
-                this.destroyEntity(entity.id);
+                if (refillFuelOnCollision.includes(entity.type)) {
+                    this.refillFuel();
+                } else {
+                    this.destroyEntity(entityCollision.with);
+                    this.destroyEntity(entity.id);
+                }
             }
         }
     }
@@ -245,7 +282,14 @@ export default class Engine {
     checkTerrainCollision(area: ImageData, entityFrame: ImageData, deeperCheck: boolean): boolean {
         if (area.data.length !== entityFrame.data.length) this.debugCollisionContext.putImageData(entityFrame, 0, 0);
         for (let i = 0; i < area.data.length; i += 4) {
-            if (area.data[i + 3] !== 3 && (!deeperCheck || entityFrame.data[i + 3] !== 0)) return true;
+            if (area.data[i + 3] !== 3 && (!deeperCheck || (area.data[i + 1] >= 60 && entityFrame.data[i + 3] !== 0))) return true;
+        }
+        return false;
+    }
+
+    checkWaterCollision(area: ImageData, entityFrame: ImageData): boolean {
+        for (let i = 0; i < area.data.length; i += 4) {
+            if (area.data[i] > 0 && entityFrame.data[i + 3] !== 0) return true;
         }
         return false;
     }
@@ -260,7 +304,7 @@ export default class Engine {
         playerBoundaries: Boundaries,
         playerBulletBoundaries: Boundaries
     ): { collision: false; with?: number } | { collision: true; with: number } {
-        if (["player", "playerBullet", "animation"].includes(entity.type)) return { collision: false };
+        if (omitCollisionWithPlayer.includes(entity.type)) return { collision: false };
         if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
             return { collision: this.collisionBetweenSprites(player, entity), with: player.id };
         }
@@ -302,12 +346,14 @@ export default class Engine {
 
     handleTerrainCollision(entity: Entity) {
         if (destroyOnCollision.includes(entity.type)) this.destroyEntity(entity.id);
-        if (bounceOnCollision.includes(entity.type)) {
-            const helicopter = entity as MovingEntity;
-            helicopter.changeMovement("x", -helicopter.movingX as MovingIndicator);
+        if (stopOnNoCollision.includes(entity.type)) {
+            const tank = entity as Tank;
+            if (tank.speedX !== 0) this.entityShoot(tank);
+            tank.speedX = 0;
         }
-        if (stopOnCollision.includes(entity.type)) {
-            console.log("here should tank stop");
+        if (bounceOnCollision.includes(entity.type)) {
+            const movingEntity = entity as MovingEntity;
+            movingEntity.changeMovement("x", -movingEntity.movingX as MovingIndicator);
         }
     }
 
@@ -351,9 +397,31 @@ export default class Engine {
                 this.createAnimatedEntity(this.entities[indexToDestroy], 0);
                 break;
             }
+            case "bridge": {
+                if (!noPoints) this.announcePlayerKill("bridge");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 0);
+                break;
+            }
+            case "fuel": {
+                if (!noPoints) this.announcePlayerKill("fuel");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 0);
+                break;
+            }
             case "plane": {
                 if (!noPoints) this.announcePlayerKill("plane");
                 this.createAnimatedEntity(this.entities[indexToDestroy], 1);
+                break;
+            }
+            case "tank": {
+                if (!noPoints) this.announcePlayerKill("tank");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 2);
+                break;
+            }
+            case "tankBullet": {
+                const bullet = this.entities[indexToDestroy] as TankBullet;
+                const owner = bullet.owner as SAMEntity;
+                this.entityShoot(owner);
+                this.createAnimatedEntity(this.entities[indexToDestroy], bullet.getRemainingFrames());
                 break;
             }
             default: {

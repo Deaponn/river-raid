@@ -3,6 +3,7 @@ import FrameRenderer from "./FrameRenderer";
 import Engine from "./Engine";
 import opponents, { Opponent } from "./opponents";
 import { Keys } from "./InputManager";
+import constants from "./Constants";
 
 export interface PlayerData {
     points: number;
@@ -54,6 +55,12 @@ export default class GameManager {
         );
         this.frameRenderer.blackout();
         this.frameRenderer.drawInterface(this.playerData);
+        const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
+        this.engine.putEnemiesData(
+            enemiesCopy.filter((enemy: Opponent) => {
+                return enemy.positionY - 218 > this.currentBridgeDistance && enemy.positionY - 218 < this.currentBridgeDistance + constants.HEIGHT;
+            })
+        );
         this.slideIntoView(0, this.currentBridgeDistance, 0.3);
         // first bridge: 458, second bridge: 3316, third bridge: 6176, fourth bridge: 9028,
         // fifth bridge: 11866, sixth bridge: 14698, seventh bridge: 17554, eigth bridge: 20404,
@@ -62,7 +69,7 @@ export default class GameManager {
 
     playerKilled(entityType: string) {
         // this.playerData.points += points;
-        const oldPoints = this.playerData.points
+        const oldPoints = this.playerData.points;
         switch (entityType) {
             case "helicopter": {
                 this.playerData.points += 60;
@@ -94,32 +101,49 @@ export default class GameManager {
             }
             case "bridge": {
                 this.playerData.points += 500;
-                this.riverBlink()
+                this.riverBlink();
                 break;
             }
             default: {
                 console.log("unknown entity killed: ", entityType);
             }
         }
-        if(oldPoints % 10000 > this.playerData.points % 10000) this.playerData.lifes++
+        if (oldPoints % 10000 > this.playerData.points % 10000) this.playerData.lifes++;
     }
 
     refillFuel() {
-        this.playerData.fuel = Math.min(100, this.playerData.fuel += 0.2)
+        this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.2));
     }
 
-    slideShow(){
-
+    slideShow(timestamp: number) {
+        // if (!this.previousTimestamp) this.previousTimestamp = timestamp;
+        // const delta = timestamp - this.previousTimestamp;
+        // this.previousTimestamp = timestamp;
+        // this.checkIfPlayerDied(timestamp);
+        // this.frameUpdate(delta);
+        // if (!this.playerDeathTimestamp || timestamp - this.playerDeathTimestamp < 1000) {
+        //     requestAnimationFrame((timestamp) => {
+        //         this.draw(timestamp);
+        //     });
+        // } else {
+        //     this.playerDeathTimestamp = null;
+        //     this.slidingAnimationStart = timestamp;
+        //     this.slideIntoView(timestamp, this.currentBridgeDistance, 0.3);
+        // }
     }
 
-    riverBlink(){
-        this.frameRenderer.blink()
+    riverBlink() {
+        this.frameRenderer.blink();
     }
 
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
         const currentDistance = (timestamp - this.slidingAnimationStart) * speed + this.slidingStartPoint;
         this.offset = currentDistance - toWhere;
+        console.log(this.offset)
+        this.engine.setDistance(currentDistance)
         this.frameRenderer.drawMap(toWhere, this.offset);
+        this.engine.spawnEnemy(this.engine.testNewEnemy())
+        this.frameRenderer.draw(this.engine.getData(), this.playerData)
         if (currentDistance < toWhere)
             requestAnimationFrame((timestamp) => {
                 this.slideIntoView(timestamp, toWhere, speed);
@@ -127,12 +151,15 @@ export default class GameManager {
         else {
             this.frameRenderer.drawMap(toWhere);
             this.engine.setDistance(toWhere);
+            this.engine.spawnEnemy(this.engine.testNewEnemy())
+            this.engine.addPlayer()
+            this.frameRenderer.draw(this.engine.getData(), this.playerData)
             document.body.addEventListener("keydown", this.startTheGame.bind(this), { once: true });
         }
     }
 
     startTheGame() {
-        const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[]
+        const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
         this.previousTimestamp = null;
         this.engine.beginGame(
             enemiesCopy.filter((enemy: Opponent) => {

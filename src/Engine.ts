@@ -47,13 +47,14 @@ const animatedMovement = ["helicopter", "shootingHelicopter", "tank"];
 
 export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
-    private readonly entities: IEntity[];
+    readonly entities: IEntity[];
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
     private readonly refillFuel: () => void;
     private opponents: Opponent[];
     private entityCounter = 0;
     private distance = 0;
+    showcasing: boolean
 
     //DEBUGGING:
     private readonly debugCollisionContext: CanvasRenderingContext2D;
@@ -103,10 +104,18 @@ export default class Engine {
         this.distance = newDistance;
     }
 
+    putEnemiesData(enemiesToSpawn: Opponent[]){
+        this.opponents = enemiesToSpawn;
+    }
+
+    addPlayer(){
+        this.entities.push(new Player(this.nextEntityId(), this.distance));
+    }
+
     beginGame(enemiesToSpawn: Opponent[]) {
         this.opponents = enemiesToSpawn;
         this.entities.length = 0;
-        this.entities.push(new Player(this.nextEntityId(), this.distance));
+        this.addPlayer()
     }
 
     triggerRefresh(delta: number, input: Keys): void {

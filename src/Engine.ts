@@ -54,7 +54,7 @@ export default class Engine {
     private opponents: Opponent[];
     private entityCounter = 0;
     private distance = 0;
-    showcasing: boolean
+    showcasing: boolean;
 
     //DEBUGGING:
     private readonly debugCollisionContext: CanvasRenderingContext2D;
@@ -104,18 +104,18 @@ export default class Engine {
         this.distance = newDistance;
     }
 
-    putEnemiesData(enemiesToSpawn: Opponent[]){
+    putEnemiesData(enemiesToSpawn: Opponent[]) {
         this.opponents = enemiesToSpawn;
     }
 
-    addPlayer(){
+    addPlayer() {
         this.entities.push(new Player(this.nextEntityId(), this.distance));
     }
 
     beginGame(enemiesToSpawn: Opponent[]) {
         this.opponents = enemiesToSpawn;
         this.entities.length = 0;
-        this.addPlayer()
+        this.addPlayer();
     }
 
     triggerRefresh(delta: number, input: Keys): void {
@@ -395,9 +395,11 @@ export default class Engine {
             if (!tank.guarded) {
                 this.destroyEntity(tank.id);
             } else {
-                this.entityShoot(tank);
-                tank.speedX = 0;
-                tank.positionX--;
+                if (tank.speedX !== 0) {
+                    this.entityShoot(tank);
+                    tank.speedX = 0;
+                    tank.positionX--;
+                }
             }
         }
         // } else if (!tank.guarded) this.destroyEntity(tank.id);
@@ -417,6 +419,9 @@ export default class Engine {
                 const bullet = this.entities[indexToDestroy] as Bullet;
                 const owner = bullet.owner as SAMEntity;
                 this.entityShoot(owner);
+                if (bullet.exType === "tankBullet") {
+                    this.createAnimatedEntity(this.entities[indexToDestroy], bullet.getRemainingFrames());
+                }
                 break;
             }
             case "playerBullet": {

@@ -139,7 +139,6 @@ export default class GameManager {
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
         const currentDistance = (timestamp - this.slidingAnimationStart) * speed + this.slidingStartPoint;
         this.offset = currentDistance - toWhere;
-        console.log(this.offset)
         this.engine.setDistance(currentDistance)
         this.frameRenderer.drawMap(toWhere, this.offset);
         this.engine.spawnEnemy(this.engine.testNewEnemy())
@@ -181,8 +180,15 @@ export default class GameManager {
                 this.draw(timestamp);
             });
         } else {
+            this.engine.entities.length = 0
             this.playerDeathTimestamp = null;
             this.slidingAnimationStart = timestamp;
+            const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
+            this.engine.putEnemiesData(
+                enemiesCopy.filter((enemy: Opponent) => {
+                    return enemy.positionY - 218 > this.currentBridgeDistance && enemy.positionY - 218 < this.currentBridgeDistance + constants.HEIGHT;
+                })
+            );
             this.slideIntoView(timestamp, this.currentBridgeDistance, 0.3);
         }
     }

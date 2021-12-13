@@ -4,6 +4,7 @@ import Entity from "./components/Entity";
 export default class Bullet extends MovingEntity {
     owner: Entity;
     type = "bullet"
+    exType?: string
     hitboxOffsetY: number
     constructor(
         id: number,
@@ -21,5 +22,9 @@ export default class Bullet extends MovingEntity {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
         this.owner = owner;
         this.hitboxOffsetY = hitboxOffsetY
+    }
+
+    getRemainingFrames(){
+        return [0]
     }
 }

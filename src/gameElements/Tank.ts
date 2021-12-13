@@ -28,7 +28,7 @@ export class Tank extends SAMEntity {
 
     override createBullet(id: number): TankBullet | null {
         const trajectory = getTrajectory(480)
-        const bullet = new TankBullet(id, this, this.positionX, this.positionY, 8, 2, 5, 0, this.movingX, 0, 16, trajectory)
+        const bullet = new TankBullet(id, this, this.positionX + (this.width / 2 * this.movingX), this.positionY, 8, 2, 5, 0, this.movingX, 0, 16, trajectory)
         return bullet
     }
 

@@ -27,6 +27,7 @@ export default class TankBullet extends MovingEntity {
     readonly originalPositionY: number;
     readonly trajectory: Trajectory;
     readonly frameLength = 8;
+    readonly exType = "tankBullet";
     owner: Entity;
     type = "tankBullet";
     hitboxOffsetY: number;
@@ -77,7 +78,7 @@ export default class TankBullet extends MovingEntity {
 
     getRemainingFrames(): number[] {
         const remainingFrames = [];
-        for (let i = this.currentAnimationFrame; i < 10; i++) {
+        for (let i = this.currentAnimationFrame; i < 10; i += 2) {
             remainingFrames.push(i);
         }
         return remainingFrames;

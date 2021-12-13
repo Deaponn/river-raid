@@ -6,6 +6,7 @@ const height = 42
 
 export class Bridge extends MovingEntity {
     readonly type = "bridge";
+    tankId?: number
     constructor(
         id: number,
         positionX: number,
@@ -13,7 +14,7 @@ export class Bridge extends MovingEntity {
         speedX: number,
         speedY: number,
         movingX: MovingIndicator,
-        movingY: MovingIndicator
+        movingY: MovingIndicator,
     ) {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
         this.rightDirection = 0;

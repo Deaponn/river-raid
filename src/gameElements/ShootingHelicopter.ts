@@ -4,8 +4,8 @@ import { MovingIndicator } from "./components/MovingEntity";
 const width = 30
 const height = 20
 
-export class Helicopter extends SAMEntity {
-    readonly type = "helicopter";
+export class ShootingHelicopter extends SAMEntity {
+    readonly type =  "shootingHelicopter";
     private currentMovingFrame = 0
     private counter = 0
     constructor(

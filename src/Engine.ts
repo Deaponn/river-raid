@@ -16,6 +16,7 @@ import { Tank } from "./gameElements/Tank";
 import TankBullet from "./gameElements/TankBullet";
 import { Fuel } from "./gameElements/Fuel";
 import { Bridge } from "./gameElements/Bridge";
+import { ShootingHelicopter } from "./gameElements/ShootingHelicopter";
 
 export interface Boundaries {
     startX: number;
@@ -40,9 +41,9 @@ const refillFuelOnCollision = ["fuel"];
 const omitCollisionWithPlayer = ["player", "playerBullet", "animation", "tankBullet"];
 const omitTerrainCollision = ["plane", "animation", "tank", "tankBullet"];
 const destroyOnCollision = ["player", "playerBullet", "bullet"];
-const bounceOnCollision = ["helicopter", "ship", "balloon"];
+const bounceOnCollision = ["helicopter", "shootingHelicopter", "ship", "balloon"];
 const stopOnNoCollision = ["tank"];
-const animatedMovement = ["helicopter", "tank"];
+const animatedMovement = ["helicopter", "shootingHelicopter", "tank"];
 
 export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
@@ -104,7 +105,6 @@ export default class Engine {
 
     beginGame(enemiesToSpawn: Opponent[]) {
         this.opponents = enemiesToSpawn;
-        console.log(this.entities, this.opponents)
         this.entities.length = 0;
         this.entities.push(new Player(this.nextEntityId(), this.distance));
     }
@@ -118,7 +118,11 @@ export default class Engine {
 
     purgeEntities(): void {
         for (const entity of this.entities) {
-            if (entity.positionY < this.distance + 100 || entity.lifetime === 0) {
+            if (
+                entity.positionY < this.distance + 100 ||
+                entity.lifetime === 0 ||
+                (entity.type === "tankBullet" && !this.getEntityById((entity as TankBullet).owner.id))
+            ) {
                 this.destroyEntity(entity.id, true);
             }
         }
@@ -139,12 +143,24 @@ export default class Engine {
 
     spawnEnemy(data: Opponent | null): void {
         if (!data) return;
-        console.log("spawning enemy: ", data)
         switch (data.type) {
             case "helicopter": {
                 const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
                 this.entities.push(helicopter);
-                if (data.shooting) this.entityShoot(helicopter);
+                break;
+            }
+            case "shootingHelicopter": {
+                const shootingHelicopter = new ShootingHelicopter(
+                    this.nextEntityId(),
+                    data.positionX,
+                    data.positionY,
+                    data.moving ? 1 : 0,
+                    0,
+                    data.direction,
+                    0
+                );
+                this.entities.push(shootingHelicopter);
+                if (data.shooting) this.entityShoot(shootingHelicopter);
                 break;
             }
             case "ship": {
@@ -177,9 +193,19 @@ export default class Engine {
                 this.entities.push(fuel);
                 break;
             }
-            default: {
-                console.log("unsupported spawn type: ", data.type);
+            case "bridgeTank": {
+                const nextId = this.nextEntityId();
+                const tank = new Tank(nextId, data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                tank.bridgeRiding = true;
+                tank.guarded = true;
+                const bridge = this.entities[this.entities.length - 1] as Bridge;
+                bridge.tankId = nextId;
+                this.entities.push(tank);
+                console.log(this.entities);
             }
+            // default: {
+            //     console.log("unsupported spawn type: ", data.type);
+            // }
         }
     }
 
@@ -267,11 +293,11 @@ export default class Engine {
                 stopOnNoCollision.includes(entity.type) &&
                 this.checkWaterCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries))
             ) {
-                this.handleTerrainCollision(entity);
+                this.handleWaterCollision(entity as Tank);
             }
             const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
             if (entityCollision.collision) {
-                if (refillFuelOnCollision.includes(entity.type)) {
+                if (refillFuelOnCollision.includes(entity.type) && this.getEntityById(entityCollision.with)?.type === "player") {
                     this.refillFuel();
                 } else {
                     this.destroyEntity(entityCollision.with);
@@ -291,7 +317,7 @@ export default class Engine {
 
     checkWaterCollision(area: ImageData, entityFrame: ImageData): boolean {
         for (let i = 0; i < area.data.length; i += 4) {
-            if (area.data[i] > 0 && entityFrame.data[i + 3] !== 0) return true;
+            if ((area.data[i] === 63 || area.data[i + 3] === 3) && entityFrame.data[i + 3] !== 0) return true;
         }
         return false;
     }
@@ -307,11 +333,11 @@ export default class Engine {
         playerBulletBoundaries: Boundaries
     ): { collision: false; with?: number } | { collision: true; with: number } {
         if (omitCollisionWithPlayer.includes(entity.type)) return { collision: false };
-        if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
-            return { collision: this.collisionBetweenSprites(player, entity), with: player.id };
-        }
         if (playerBullet && this.collisionBetweenBoundaries(playerBulletBoundaries, boundaries)) {
             return { collision: this.collisionBetweenSprites(playerBullet, entity), with: playerBullet.id };
+        }
+        if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
+            return { collision: this.collisionBetweenSprites(player, entity), with: player.id };
         } else return { collision: false };
     }
 
@@ -348,15 +374,24 @@ export default class Engine {
 
     handleTerrainCollision(entity: Entity) {
         if (destroyOnCollision.includes(entity.type)) this.destroyEntity(entity.id);
-        if (stopOnNoCollision.includes(entity.type)) {
-            const tank = entity as Tank;
-            if (tank.speedX !== 0) this.entityShoot(tank);
-            tank.speedX = 0;
-        }
         if (bounceOnCollision.includes(entity.type)) {
             const movingEntity = entity as MovingEntity;
             movingEntity.changeMovement("x", -movingEntity.movingX as MovingIndicator);
         }
+    }
+
+    handleWaterCollision(tank: Tank) {
+        // if (!tank.bridgeRiding) {
+        if (!tank.bridgeRiding) {
+            if (!tank.guarded) {
+                this.destroyEntity(tank.id);
+            } else {
+                this.entityShoot(tank);
+                tank.speedX = 0;
+                tank.positionX--;
+            }
+        }
+        // } else if (!tank.guarded) this.destroyEntity(tank.id);
     }
 
     destroyEntity(id: number, noPoints = false) {
@@ -389,6 +424,11 @@ export default class Engine {
                 this.createAnimatedEntity(this.entities[indexToDestroy], 2);
                 break;
             }
+            case "shootingHelicopter": {
+                if (!noPoints) this.announcePlayerKill("shootingHelicopter");
+                this.createAnimatedEntity(this.entities[indexToDestroy], 2);
+                break;
+            }
             case "ship": {
                 if (!noPoints) this.announcePlayerKill("ship");
                 this.createAnimatedEntity(this.entities[indexToDestroy], 1);
@@ -402,6 +442,14 @@ export default class Engine {
             case "bridge": {
                 if (!noPoints) this.announcePlayerKill("bridge");
                 this.createAnimatedEntity(this.entities[indexToDestroy], 0);
+                const bridge = this.entities[indexToDestroy] as Bridge;
+                if (bridge.tankId) {
+                    const tank = this.getEntityById(bridge.tankId) as Tank;
+                    tank.speedX = 0;
+                    tank.bridgeRiding = false;
+                    tank.guarded = false;
+                    this.entityShoot(tank);
+                }
                 break;
             }
             case "fuel": {

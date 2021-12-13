@@ -44,6 +44,10 @@ export default class TextureManager {
                 sprites: 7,
             },
             {
+                path: "shootingHelicopter.png",
+                sprites: 7,
+            },
+            {
                 path: "map.png",
                 sprites: 1,
             },

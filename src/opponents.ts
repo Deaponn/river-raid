@@ -1,15 +1,24 @@
-export interface Opponent {
-    type: "helicopter" | "ship" | "balloon" | "plane" | "tank" | "fuel" | "bridge";
-    positionX: number;
-    positionY: number;
-    direction: -1 | 1; // left | right
-    moving: boolean;
-    shooting: boolean;
-}
+export type Opponent =
+    | {
+          type: "helicopter" | "shootingHelicopter" | "ship" | "balloon" | "plane" | "tank" | "fuel" | "bridge" | "bridgeTank";
+          positionX: number;
+          positionY: number;
+          direction: -1 | 1; // left | right
+          moving: boolean;
+          shooting: boolean;
+      }
+    | {
+          type: "fuel";
+          positionX: number;
+          positionY: number;
+          direction: 1; // left | right
+          moving: false;
+          shooting: false;
+      };
 
 const opponents: Opponent[] = [
     {
-        type: "helicopter",
+        type: "shootingHelicopter",
         positionX: 200,
         positionY: 1100,
         direction: -1,
@@ -54,6 +63,14 @@ const opponents: Opponent[] = [
         positionY: 3533, // 3316
         direction: 1,
         moving: false,
+        shooting: false,
+    },
+    {
+        type: "bridgeTank",
+        positionX: 20,
+        positionY: 3514,
+        direction: 1,
+        moving: true,
         shooting: false,
     },
     {

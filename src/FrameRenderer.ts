@@ -24,7 +24,14 @@ export default class FrameRenderer {
         this.interfaceContext = interfaceContext;
         this.backgroundContext = backgroundContext;
         this.textures = textures;
-        this.interface = new Interface(this.interfaceContext, this.textures.interface, this.textures.fuel_indicator, this.textures.life, this.textures.digits_black, this.textures.digits_yellow);
+        this.interface = new Interface(
+            this.interfaceContext,
+            this.textures.interface,
+            this.textures.fuel_indicator,
+            this.textures.life,
+            this.textures.digits_black,
+            this.textures.digits_yellow
+        );
         this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
     }
@@ -48,8 +55,8 @@ export default class FrameRenderer {
             constants.WIDTH,
             constants.HEIGHT
         );
-        this.context.fillStyle = "black"
-        this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT)
+        this.context.fillStyle = "black";
+        this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT);
     }
 
     drawInterface(data: PlayerData) {
@@ -59,15 +66,13 @@ export default class FrameRenderer {
 
     drawEntities(entities: IEntity[] | AnimationEntity[], distance: number) {
         for (const entity of entities) {
-            // if(entity.type === "animation") this.drawAnimation(entity as AnimationEntity, distance)
-            // else this.drawEntity(entity as IEntity, distance);
             this.drawEntity(entity, distance);
         }
     }
 
     drawEntity(entity: IEntity | AnimationEntity, distance: number) {
-        let entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity]
-        if(entity.type === "tankBullet") entityTexture = this.textures.bullet
+        let entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity];
+        if (entity.type === "tankBullet") entityTexture = this.textures.bullet;
         this.context.fillStyle = "rgba(255,0,255,0.3)";
         if (entityTexture) {
             this.context.drawImage(
@@ -87,21 +92,45 @@ export default class FrameRenderer {
             //     entity.width,
             //     entity.height
             // );
+        } else {
+            console.log("not drawing entity: ", entity);
         }
-        else {
-            console.log("not drawing entity: ", entity)
-        }
-    }
-
-    drawAnimation(animation: AnimationEntity, distance: number){
-    //     const entityTexture = this.textures[animation.entity.type];
-    //     if(entityTexture){
-    //         this.context.drawImage(entityTexture.sourceCanvas, entity.currentAnimationFrame * entityTexture.frameWidth)
-    //     }
     }
 
     blackout() {
         this.context.fillStyle = "rgba(0,0,0,1)";
         this.context.fillRect(0, 0, 800, 600);
+    }
+
+    blink() {
+        this.backgroundContext.fillStyle = "#500e5d";
+        this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+        if (Math.random() > 0.5) {
+            setTimeout(() => {
+                this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+                this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+            }, 300);
+        } else {
+            setTimeout(() => {
+                this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+                this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+                setTimeout(() => {
+                    this.backgroundContext.fillStyle = "#500e5d";
+                    this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+                    setTimeout(() => {
+                        this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+                        this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+                        setTimeout(() => {
+                            this.backgroundContext.fillStyle = "#500e5d";
+                            this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+                            setTimeout(() => {
+                                this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+                                this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+                            }, 100)
+                        }, 100)
+                    }, 100);
+                }, 100);
+            }, 100);
+        }
     }
 }

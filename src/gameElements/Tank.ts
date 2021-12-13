@@ -8,8 +8,10 @@ const height = 20
 
 export class Tank extends SAMEntity {
     readonly type = "tank";
-    private currentMovingFrame = 0
+    currentMovingFrame = 0
     private counter = 0
+    bridgeRiding: boolean = false
+    guarded: boolean = true
     constructor(
         id: number,
         positionX: number,
@@ -32,7 +34,7 @@ export class Tank extends SAMEntity {
 
     override changeFrame(){
         this.counter++
-        if(this.counter < 20) return
+        if(this.counter < 10) return
         this.counter = 0
         this.currentMovingFrame = this.currentMovingFrame === 1 ? 0 : 1
         this.currentAnimationFrame = (this.movingX === -1 ? 0 : 2) + this.currentMovingFrame

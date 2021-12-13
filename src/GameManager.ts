@@ -62,9 +62,14 @@ export default class GameManager {
 
     playerKilled(entityType: string) {
         // this.playerData.points += points;
+        const oldPoints = this.playerData.points
         switch (entityType) {
             case "helicopter": {
                 this.playerData.points += 60;
+                break;
+            }
+            case "shootingHelicopter": {
+                this.playerData.points += 150;
                 break;
             }
             case "ship": {
@@ -89,16 +94,26 @@ export default class GameManager {
             }
             case "bridge": {
                 this.playerData.points += 500;
+                this.riverBlink()
                 break;
             }
             default: {
                 console.log("unknown entity killed: ", entityType);
             }
         }
+        if(oldPoints % 10000 > this.playerData.points % 10000) this.playerData.lifes++
     }
 
     refillFuel() {
         this.playerData.fuel = Math.min(100, this.playerData.fuel += 0.2)
+    }
+
+    slideShow(){
+
+    }
+
+    riverBlink(){
+        this.frameRenderer.blink()
     }
 
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
@@ -147,8 +162,7 @@ export default class GameManager {
 
     frameUpdate(delta: number) {
         if (!this.playerDeathTimestamp) {
-            if (this.pressedKeys.w?.press) this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 250);
-            else this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 625);
+            this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 500);
         }
         for (let i = 0; i < this.bridgeDistances.length; i++) {
             if (this.bridgeDistances[i] > this.engine.getDistance()) break;

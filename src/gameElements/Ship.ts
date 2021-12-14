@@ -18,6 +18,6 @@ export class Ship extends SAMEntity {
     ) {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
         this.rightDirection = 1;
-        this.currentAnimationFrame = (this.movingX === -1 ? 0 : 2) + this.currentMovingFrame;
+        this.currentAnimationFrame = (this.movingX === -1 ? 0 : 1) + this.currentMovingFrame;
     }
 }

@@ -75,12 +75,12 @@ export default class Engine {
         this.refillFuel = refillFuel;
 
         //DEBUGGING:
-        this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
+        // this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
 
         this.counter = 10;
         const canvas = document.createElement("canvas") as HTMLCanvasElement;
         canvas.classList.add("debugging");
-        document.body.appendChild(canvas);
+        // document.body.appendChild(canvas);
         this.debugCollisionContext = canvas.getContext("2d") as CanvasRenderingContext2D;
         canvas.width = 200;
         canvas.height = 100;

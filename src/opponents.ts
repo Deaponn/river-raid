@@ -38,7 +38,7 @@ const opponents: Opponent[] = [
         positionX: 500,
         positionY: 1100,
         direction: -1,
-        moving: false,
+        moving: true,
         shooting: false,
     },
     {

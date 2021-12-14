@@ -30,6 +30,7 @@ export default class GameManager {
     private playerDeathTimestamp: number | null;
     private previousTimestamp: number | null;
     private offset: number;
+    private slideShowId: number;
 
     constructor(context: CanvasRenderingContext2D, interfaceContext: CanvasRenderingContext2D, backgroundContext: CanvasRenderingContext2D, pressedKeys: Keys) {
         this.context = context;
@@ -56,12 +57,19 @@ export default class GameManager {
         this.frameRenderer.blackout();
         this.frameRenderer.drawInterface(this.playerData);
         const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
-        this.engine.putEnemiesData(
-            enemiesCopy.filter((enemy: Opponent) => {
-                return enemy.positionY - 218 > this.currentBridgeDistance && enemy.positionY - 218 < this.currentBridgeDistance + constants.HEIGHT;
-            })
+        this.engine.putEnemiesData(enemiesCopy);
+        this.engine.showcasing = true;
+        document.body.addEventListener(
+            "keydown",
+            () => {
+                cancelAnimationFrame(this.slideShowId);
+                this.engine.setDistance(0);
+                this.engine.showcasing = false;
+                this.slideIntoView(0, 458, 0.6);
+            },
+            { once: true }
         );
-        this.slideIntoView(0, this.currentBridgeDistance, 0.3);
+        this.slideShow(0);
         // first bridge: 458, second bridge: 3316, third bridge: 6176, fourth bridge: 9028,
         // fifth bridge: 11866, sixth bridge: 14698, seventh bridge: 17554, eigth bridge: 20404,
         // ninth bridge: 23258, tenth bridge: 26112
@@ -115,21 +123,20 @@ export default class GameManager {
         this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.2));
     }
 
-    slideShow(timestamp: number) {
-        // if (!this.previousTimestamp) this.previousTimestamp = timestamp;
-        // const delta = timestamp - this.previousTimestamp;
-        // this.previousTimestamp = timestamp;
-        // this.checkIfPlayerDied(timestamp);
-        // this.frameUpdate(delta);
-        // if (!this.playerDeathTimestamp || timestamp - this.playerDeathTimestamp < 1000) {
-        //     requestAnimationFrame((timestamp) => {
-        //         this.draw(timestamp);
-        //     });
-        // } else {
-        //     this.playerDeathTimestamp = null;
-        //     this.slidingAnimationStart = timestamp;
-        //     this.slideIntoView(timestamp, this.currentBridgeDistance, 0.3);
-        // }
+    slideShow(timestamp: number, toWhere: number = 28508, speed: number = 0.1) {
+        const currentDistance = timestamp * speed;
+        this.engine.setDistance(currentDistance);
+        this.frameRenderer.drawMap(currentDistance);
+        this.engine.updateEntities(currentDistance - this.offset);
+        this.offset = currentDistance;
+        this.engine.spawnEnemy(this.engine.testNewEnemy());
+        this.frameRenderer.draw(this.engine.getData(), this.playerData);
+        this.slidingAnimationStart = timestamp
+        if (currentDistance < toWhere) {
+            this.slideShowId = requestAnimationFrame((timestamp) => {
+                this.slideShow(timestamp, toWhere, speed);
+            });
+        }
     }
 
     riverBlink() {
@@ -139,10 +146,10 @@ export default class GameManager {
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
         const currentDistance = (timestamp - this.slidingAnimationStart) * speed + this.slidingStartPoint;
         this.offset = currentDistance - toWhere;
-        this.engine.setDistance(currentDistance)
+        this.engine.setDistance(currentDistance);
         this.frameRenderer.drawMap(toWhere, this.offset);
-        this.engine.spawnEnemy(this.engine.testNewEnemy())
-        this.frameRenderer.draw(this.engine.getData(), this.playerData)
+        this.engine.spawnEnemy(this.engine.testNewEnemy());
+        this.frameRenderer.draw(this.engine.getData(), this.playerData);
         if (currentDistance < toWhere)
             requestAnimationFrame((timestamp) => {
                 this.slideIntoView(timestamp, toWhere, speed);
@@ -150,9 +157,9 @@ export default class GameManager {
         else {
             this.frameRenderer.drawMap(toWhere);
             this.engine.setDistance(toWhere);
-            this.engine.spawnEnemy(this.engine.testNewEnemy())
-            this.engine.addPlayer()
-            this.frameRenderer.draw(this.engine.getData(), this.playerData)
+            this.engine.spawnEnemy(this.engine.testNewEnemy());
+            this.engine.addPlayer();
+            this.frameRenderer.draw(this.engine.getData(), this.playerData);
             document.body.addEventListener("keydown", this.startTheGame.bind(this), { once: true });
         }
     }
@@ -180,7 +187,7 @@ export default class GameManager {
                 this.draw(timestamp);
             });
         } else {
-            this.engine.entities.length = 0
+            this.engine.entities.length = 0;
             this.playerDeathTimestamp = null;
             this.slidingAnimationStart = timestamp;
             const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
@@ -203,6 +210,21 @@ export default class GameManager {
         }
         if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
         if (this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++;
+        this.frameRenderer.drawMap(this.engine.getDistance());
+        this.engine.triggerRefresh(delta / 10, this.pressedKeys);
+        this.frameRenderer.draw(this.engine.getData(), this.playerData);
+    }
+
+    frameUpdateForSlideShow(delta: number) {
+        // if (!this.playerDeathTimestamp) {
+        //     this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 500);
+        // }
+        // for (let i = 0; i < this.bridgeDistances.length; i++) {
+        //     if (this.bridgeDistances[i] > this.engine.getDistance()) break;
+        //     else this.playerData.bridge = i + 1;
+        // }
+        // if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
+        // if (this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++;
         this.frameRenderer.drawMap(this.engine.getDistance());
         this.engine.triggerRefresh(delta / 10, this.pressedKeys);
         this.frameRenderer.draw(this.engine.getData(), this.playerData);

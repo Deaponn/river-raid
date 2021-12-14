@@ -43,6 +43,7 @@ export default class FrameRenderer {
     }
 
     drawMap(distance: number, offset = 0) {
+        // console.log("drawing map distance: ", distance)
         this.context.clearRect(0, 0, constants.WIDTH, constants.HEIGHT);
         this.context.drawImage(
             this.textures.map.sourceCanvas,
@@ -55,6 +56,7 @@ export default class FrameRenderer {
             constants.WIDTH,
             constants.HEIGHT
         );
+        if(offset === 0) return
         this.context.fillStyle = "black";
         this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT);
     }

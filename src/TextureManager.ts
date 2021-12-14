@@ -74,6 +74,10 @@ export default class TextureManager {
         ];
         this.interfaceSourceList = [
             {
+                path: "activision.png",
+                sprites: 1,
+            },
+            {
                 path: "fuel_indicator.png",
                 sprites: 1,
             },

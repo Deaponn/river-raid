@@ -20,8 +20,16 @@ export default class GameManager {
     private readonly interfaceContext: CanvasRenderingContext2D;
     private readonly backgroundContext: CanvasRenderingContext2D;
     private readonly pressedKeys: Keys;
-    private readonly playerData: PlayerData = { lifes: 3, points: 0, highscore: 0, fuel: 100, bridge: 1, gameId: 1 };
+    private readonly playerData: PlayerData = {
+        lifes: 3,
+        points: 0,
+        highscore: parseInt(localStorage.getItem("highscore") || "0"),
+        fuel: 100,
+        bridge: 1,
+        gameId: 1,
+    };
     private readonly bridgeDistances = [458, 3316, 6176, 9028, 11866, 14698, 17554, 20404, 23258, 26112];
+    private readonly bridgeCenters = [400, 406, 378, 410, 373, 363, 426, 442, 433, 385];
     private engine: Engine;
     private frameRenderer: FrameRenderer;
     private currentBridgeDistance = 458; // 458
@@ -66,10 +74,12 @@ export default class GameManager {
                 this.engine.setDistance(0);
                 this.engine.showcasing = false;
                 this.slideIntoView(0, 458, 0.6);
+                this.frameRenderer.gameStarted = true;
             },
             { once: true }
         );
         this.slideShow(0);
+        this.frameRenderer.drawTextAnimation(0);
         // first bridge: 458, second bridge: 3316, third bridge: 6176, fourth bridge: 9028,
         // fifth bridge: 11866, sixth bridge: 14698, seventh bridge: 17554, eigth bridge: 20404,
         // ninth bridge: 23258, tenth bridge: 26112
@@ -131,7 +141,7 @@ export default class GameManager {
         this.offset = currentDistance;
         this.engine.spawnEnemy(this.engine.testNewEnemy());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
-        this.slidingAnimationStart = timestamp
+        this.slidingAnimationStart = timestamp;
         if (currentDistance < toWhere) {
             this.slideShowId = requestAnimationFrame((timestamp) => {
                 this.slideShow(timestamp, toWhere, speed);
@@ -158,7 +168,7 @@ export default class GameManager {
             this.frameRenderer.drawMap(toWhere);
             this.engine.setDistance(toWhere);
             this.engine.spawnEnemy(this.engine.testNewEnemy());
-            this.engine.addPlayer();
+            this.engine.addPlayer(this.bridgeCenters[this.playerData.bridge - 1]);
             this.frameRenderer.draw(this.engine.getData(), this.playerData);
             document.body.addEventListener("keydown", this.startTheGame.bind(this), { once: true });
         }
@@ -170,7 +180,8 @@ export default class GameManager {
         this.engine.beginGame(
             enemiesCopy.filter((enemy: Opponent) => {
                 return enemy.positionY - 218 > this.currentBridgeDistance;
-            })
+            }),
+            this.bridgeCenters[this.playerData.bridge - 1]
         );
         this.draw(0);
     }
@@ -216,15 +227,6 @@ export default class GameManager {
     }
 
     frameUpdateForSlideShow(delta: number) {
-        // if (!this.playerDeathTimestamp) {
-        //     this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 500);
-        // }
-        // for (let i = 0; i < this.bridgeDistances.length; i++) {
-        //     if (this.bridgeDistances[i] > this.engine.getDistance()) break;
-        //     else this.playerData.bridge = i + 1;
-        // }
-        // if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
-        // if (this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++;
         this.frameRenderer.drawMap(this.engine.getDistance());
         this.engine.triggerRefresh(delta / 10, this.pressedKeys);
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
@@ -238,6 +240,20 @@ export default class GameManager {
             this.playerDeathTimestamp = timestamp;
             this.playerData.lifes--;
             this.playerData.fuel = 100;
+            if (this.playerData.lifes === 0) this.gameOver();
+        }
+    }
+
+    gameOver() {
+        this.saveScore();
+    }
+
+    saveScore() {
+        const highscore = localStorage.getItem("highscore");
+        if (!highscore || parseInt(highscore) < this.playerData.points) {
+            localStorage.setItem("highscore", this.playerData.points.toString());
+            this.playerData.highscore = this.playerData.points;
+            this.playerData.points = 0
         }
     }
 }

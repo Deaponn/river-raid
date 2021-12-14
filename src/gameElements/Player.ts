@@ -1,7 +1,6 @@
 import PlayerBullet from "./PlayerBullet";
 import SAMEntity from "./components/SAMEntity";
 
-const canvasMiddleX = 384;
 const distanceOffset = 202;
 const playerWidth = 32;
 const playerHeight = 30;
@@ -20,10 +19,11 @@ export default class Player extends SAMEntity {
     bulletId: number
     hasBullet: boolean = false;
     accellerationSpeed: number = 20;
-    constructor(id: number, currentDistance: number) {
-        super(id, canvasMiddleX, currentDistance + distanceOffset, playerWidth, playerHeight, playerSpeedX, playerSpeedY, playerMovingX, playerMovingY);
+    constructor(id: number, positionX: number, currentDistance: number) {
+        super(id, positionX, currentDistance + distanceOffset, playerWidth, playerHeight, playerSpeedX, playerSpeedY, playerMovingX, playerMovingY);
         this.currentAnimationFrame = 1;
         this.rightDirection = 2;
+        console.log(this.positionX)
     }
 
     override createBullet(id: number): null | PlayerBullet {

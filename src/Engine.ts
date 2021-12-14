@@ -108,14 +108,14 @@ export default class Engine {
         this.opponents = enemiesToSpawn;
     }
 
-    addPlayer() {
-        this.entities.push(new Player(this.nextEntityId(), this.distance));
+    addPlayer(positionX: number) {
+        this.entities.push(new Player(this.nextEntityId(), positionX, this.distance));
     }
 
-    beginGame(enemiesToSpawn: Opponent[]) {
+    beginGame(enemiesToSpawn: Opponent[], positionX: number) {
         this.opponents = enemiesToSpawn;
         this.entities.length = 0;
-        this.addPlayer();
+        this.addPlayer(positionX);
     }
 
     triggerRefresh(delta: number, input: Keys): void {
@@ -146,7 +146,7 @@ export default class Engine {
     }
 
     testNewEnemy(): Opponent | null {
-        if (this.opponents.length > 0 && this.distance + 700 > this.opponents[0].positionY) return this.opponents.shift()!;
+        if (this.opponents.length > 0 && this.distance + 900 > this.opponents[0].positionY) return this.opponents.shift()!;
         else return null;
     }
 
@@ -154,7 +154,8 @@ export default class Engine {
         if (!data) return;
         switch (data.type) {
             case "helicopter": {
-                const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                if(data.moving) helicopter.ruchable = true
                 this.entities.push(helicopter);
                 break;
             }
@@ -163,54 +164,56 @@ export default class Engine {
                     this.nextEntityId(),
                     data.positionX,
                     data.positionY,
-                    data.moving ? 1 : 0,
+                    0,
                     0,
                     data.direction,
                     0
                 );
+                if(data.moving) shootingHelicopter.ruchable = true
                 this.entities.push(shootingHelicopter);
                 if (data.shooting) this.entityShoot(shootingHelicopter);
                 break;
             }
             case "ship": {
-                const ship = new Ship(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const ship = new Ship(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                if(data.moving) ship.ruchable = true
                 this.entities.push(ship);
                 break;
             }
             case "balloon": {
-                const balloon = new Balloon(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const balloon = new Balloon(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                if(data.moving) balloon.ruchable = true
                 this.entities.push(balloon);
                 break;
             }
             case "bridge": {
-                const bridge = new Bridge(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const bridge = new Bridge(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
                 this.entities.push(bridge);
                 break;
             }
             case "plane": {
-                const plane = new Plane(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 5 : 0, 0, data.direction, 0);
+                const plane = new Plane(this.nextEntityId(), data.positionX, data.positionY, 5, 0, data.direction, 0);
                 this.entities.push(plane);
                 break;
             }
             case "tank": {
-                const tank = new Tank(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const tank = new Tank(this.nextEntityId(), data.positionX, data.positionY, 1, 0, data.direction, 0);
                 this.entities.push(tank);
                 break;
             }
             case "fuel": {
-                const fuel = new Fuel(this.nextEntityId(), data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const fuel = new Fuel(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
                 this.entities.push(fuel);
                 break;
             }
             case "bridgeTank": {
                 const nextId = this.nextEntityId();
-                const tank = new Tank(nextId, data.positionX, data.positionY, data.moving ? 1 : 0, 0, data.direction, 0);
+                const tank = new Tank(nextId, data.positionX, data.positionY, 1, 0, data.direction, 0);
                 tank.bridgeRiding = true;
                 tank.guarded = true;
                 const bridge = this.entities[this.entities.length - 1] as Bridge;
                 bridge.tankId = nextId;
                 this.entities.push(tank);
-                console.log(this.entities);
             }
             // default: {
             //     console.log("unsupported spawn type: ", data.type);
@@ -261,6 +264,7 @@ export default class Engine {
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
             else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
+            if(entity.ruchable && Math.random() < 0.003) (entity as MovingEntity).speedX = 1
         }
     }
 

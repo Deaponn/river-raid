@@ -14,6 +14,7 @@ export default class FrameRenderer {
     private readonly interface: Interface;
     private readonly mapLength = 28508;
     private previousInterfaceData: PlayerData;
+    gameStarted = false;
     constructor(
         context: CanvasRenderingContext2D,
         interfaceContext: CanvasRenderingContext2D,
@@ -34,6 +35,7 @@ export default class FrameRenderer {
         );
         this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+        this.interfaceContext.font = "28px atari";
     }
 
     draw(engineData: EngineData, playerData: PlayerData) {
@@ -56,7 +58,7 @@ export default class FrameRenderer {
             constants.WIDTH,
             constants.HEIGHT
         );
-        if(offset === 0) return
+        if (offset === 0) return;
         this.context.fillStyle = "black";
         this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT);
     }
@@ -67,9 +69,12 @@ export default class FrameRenderer {
     }
 
     drawEntities(entities: IEntity[] | AnimationEntity[], distance: number) {
+        let remember;
         for (const entity of entities) {
+            if (entity.type === "player") remember = entity;
             this.drawEntity(entity, distance);
         }
+        if (remember) this.drawEntity(remember, distance);
     }
 
     drawEntity(entity: IEntity | AnimationEntity, distance: number) {
@@ -104,6 +109,28 @@ export default class FrameRenderer {
         this.context.fillRect(0, 0, 800, 600);
     }
 
+    drawTextAnimation(timestamp: number) {
+        // console.log(timestamp)
+        this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
+        this.interfaceContext.fillRect(0, 552, 800, 48);
+        this.interfaceContext.fillStyle = "#c0c0c0";
+        this.interfaceContext.fillText(
+            "RIVER RAID TM by Bartosz Sajecki            Copyright 2021                      Press ANY key to begin playing",
+            constants.WIDTH - ((timestamp / 5) % 4000),
+            580
+        );
+        this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 1640 + constants.WIDTH - ((timestamp / 5) % 4000), 562);
+        if (!this.gameStarted) {
+            requestAnimationFrame((timestamp) => {
+                this.drawTextAnimation(timestamp);
+            });
+        } else {
+            this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
+            this.interfaceContext.fillRect(0, 552, 800, 48);
+            this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 100, 562);
+        }
+    }
+
     blink() {
         this.backgroundContext.fillStyle = "#500e5d";
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
@@ -128,8 +155,8 @@ export default class FrameRenderer {
                             setTimeout(() => {
                                 this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
                                 this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                            }, 100)
-                        }, 100)
+                            }, 100);
+                        }, 100);
                     }, 100);
                 }, 100);
             }, 100);

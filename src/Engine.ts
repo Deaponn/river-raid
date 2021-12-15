@@ -17,6 +17,7 @@ import TankBullet from "./gameElements/TankBullet";
 import { Fuel } from "./gameElements/Fuel";
 import { Bridge } from "./gameElements/Bridge";
 import { ShootingHelicopter } from "./gameElements/ShootingHelicopter";
+import SoundManager from "./SoundManager";
 
 export interface Boundaries {
     startX: number;
@@ -51,6 +52,7 @@ export default class Engine {
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
     private readonly refillFuel: () => void;
+    private readonly soundPlayer: SoundManager;
     private opponents: Opponent[];
     private entityCounter = 0;
     private distance = 0;
@@ -65,7 +67,8 @@ export default class Engine {
         initialOpponents: Opponent[],
         getSprite: (name: string, frame: number) => ImageData,
         announcePlayerKill: (entityType: string) => void,
-        refillFuel: () => void
+        refillFuel: () => void,
+        soundPlayer: SoundManager
     ) {
         this.mapCollisions = map;
         this.entities = [];
@@ -73,6 +76,7 @@ export default class Engine {
         this.getSprite = getSprite;
         this.announcePlayerKill = announcePlayerKill;
         this.refillFuel = refillFuel;
+        this.soundPlayer = soundPlayer;
 
         //DEBUGGING:
         // this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
@@ -155,34 +159,26 @@ export default class Engine {
         switch (data.type) {
             case "helicopter": {
                 const helicopter = new Helicopter(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
-                if(data.moving) helicopter.ruchable = true
+                if (data.moving) helicopter.ruchable = true;
                 this.entities.push(helicopter);
                 break;
             }
             case "shootingHelicopter": {
-                const shootingHelicopter = new ShootingHelicopter(
-                    this.nextEntityId(),
-                    data.positionX,
-                    data.positionY,
-                    0,
-                    0,
-                    data.direction,
-                    0
-                );
-                if(data.moving) shootingHelicopter.ruchable = true
+                const shootingHelicopter = new ShootingHelicopter(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                if (data.moving) shootingHelicopter.ruchable = true;
                 this.entities.push(shootingHelicopter);
                 if (data.shooting) this.entityShoot(shootingHelicopter);
                 break;
             }
             case "ship": {
                 const ship = new Ship(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
-                if(data.moving) ship.ruchable = true
+                if (data.moving) ship.ruchable = true;
                 this.entities.push(ship);
                 break;
             }
             case "balloon": {
                 const balloon = new Balloon(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
-                if(data.moving) balloon.ruchable = true
+                if (data.moving) balloon.ruchable = true;
                 this.entities.push(balloon);
                 break;
             }
@@ -246,7 +242,11 @@ export default class Engine {
         if (input[" "]?.press) this.entityShoot(player);
         if (input.w?.press) {
             player.speedY = Math.min(player.speedY + (player.speedY + 1) / 30, player.maxSpeedY);
-        } else player.speedY = 1;
+            this.soundPlayer.playSound("fastFlight");
+        } else {
+            player.speedY = 1;
+            this.soundPlayer.playSound("flight");
+        }
     }
 
     calculate(delta: number): void {
@@ -264,7 +264,7 @@ export default class Engine {
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
             else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
-            if(entity.ruchable && Math.random() < 0.003) (entity as MovingEntity).speedX = 1
+            if (entity.ruchable && Math.random() < 0.003) (entity as MovingEntity).speedX = 1;
         }
     }
 
@@ -284,7 +284,12 @@ export default class Engine {
     entityShoot(who: SAMEntity): void {
         if (!this.getEntityById(who.id)) return;
         const bullet = who.createBullet(this.nextEntityId());
-        if (bullet) this.entities.push(bullet);
+        if (bullet) {
+            this.entities.push(bullet);
+            if (who.type === "player") this.soundPlayer.playSound("playerShoot");
+            if (who.type === "shootingHelicopter") this.soundPlayer.playSound("helicopterShoot");
+            if (who.type === "tank") this.soundPlayer.playSound("tankShoot");
+        }
     }
 
     manageCollisions(): void {
@@ -416,6 +421,7 @@ export default class Engine {
         switch (this.entities[indexToDestroy].type) {
             case "player": {
                 // handle losing here
+                this.soundPlayer.playSound("playerDeath");
                 this.createAnimatedEntity(this.entities[indexToDestroy], 3);
                 break;
             }

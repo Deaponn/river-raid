@@ -4,6 +4,7 @@ import Engine from "./Engine";
 import opponents, { Opponent } from "./opponents";
 import { Keys } from "./InputManager";
 import constants from "./Constants";
+import SoundManager from "./SoundManager";
 
 export interface PlayerData {
     points: number;
@@ -15,10 +16,8 @@ export interface PlayerData {
 }
 
 export default class GameManager {
-    private readonly textureManager: TextureManager = new TextureManager();
+    private readonly textureManager: TextureManager;
     private readonly context: CanvasRenderingContext2D;
-    private readonly interfaceContext: CanvasRenderingContext2D;
-    private readonly backgroundContext: CanvasRenderingContext2D;
     private readonly pressedKeys: Keys;
     private readonly playerData: PlayerData = {
         lifes: 3,
@@ -30,6 +29,7 @@ export default class GameManager {
     };
     private readonly bridgeDistances = [458, 3316, 6176, 9028, 11866, 14698, 17554, 20404, 23258, 26112];
     private readonly bridgeCenters = [400, 406, 378, 410, 373, 363, 426, 442, 433, 385];
+    private readonly soundPlayer: SoundManager;
     private engine: Engine;
     private frameRenderer: FrameRenderer;
     private currentBridgeDistance = 458; // 458
@@ -37,20 +37,29 @@ export default class GameManager {
     private slidingStartPoint = 0; // 0
     private playerDeathTimestamp: number | null;
     private previousTimestamp: number | null;
-    private offset: number;
     private slideShowId: number;
 
-    constructor(context: CanvasRenderingContext2D, interfaceContext: CanvasRenderingContext2D, backgroundContext: CanvasRenderingContext2D, pressedKeys: Keys) {
+    constructor(
+        context: CanvasRenderingContext2D,
+        frameRenderer: FrameRenderer,
+        textureManager: TextureManager,
+        pressedKeys: Keys,
+        soundPlayer: SoundManager,
+    ) {
         this.context = context;
-        this.interfaceContext = interfaceContext;
-        this.backgroundContext = backgroundContext;
+        this.textureManager = textureManager;
+        this.soundPlayer = soundPlayer;
+        this.frameRenderer = frameRenderer;
         this.pressedKeys = pressedKeys;
-        this.loadAssets();
+        this.bootUp();
     }
 
-    async loadAssets() {
-        await this.textureManager.load();
-        this.frameRenderer = new FrameRenderer(this.context, this.interfaceContext, this.backgroundContext, this.textureManager.textures);
+    bootUp(prevTimestamp: number | null = null) {
+        this.currentBridgeDistance = 458; // 458
+        this.slidingAnimationStart = prevTimestamp || 0;
+        this.slidingStartPoint = 0; // 0
+        this.playerDeathTimestamp = null;
+        this.previousTimestamp = prevTimestamp;
         this.engine = new Engine(
             this.context,
             JSON.parse(JSON.stringify(opponents)),
@@ -60,7 +69,8 @@ export default class GameManager {
             },
             () => {
                 this.refillFuel();
-            }
+            },
+            this.soundPlayer
         );
         this.frameRenderer.blackout();
         this.frameRenderer.drawInterface(this.playerData);
@@ -70,6 +80,7 @@ export default class GameManager {
         document.body.addEventListener(
             "keydown",
             () => {
+                this.soundPlayer.playSound("boot");
                 cancelAnimationFrame(this.slideShowId);
                 this.engine.setDistance(0);
                 this.engine.showcasing = false;
@@ -87,6 +98,7 @@ export default class GameManager {
 
     playerKilled(entityType: string) {
         // this.playerData.points += points;
+        this.soundPlayer.playSound("enemyDeath");
         const oldPoints = this.playerData.points;
         switch (entityType) {
             case "helicopter": {
@@ -131,14 +143,16 @@ export default class GameManager {
 
     refillFuel() {
         this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.2));
+        if (this.playerData.fuel === 100) this.soundPlayer.playSound("tankingFull");
+        else this.soundPlayer.playSound("tanking");
     }
 
     slideShow(timestamp: number, toWhere: number = 28508, speed: number = 0.1) {
         const currentDistance = timestamp * speed;
         this.engine.setDistance(currentDistance);
         this.frameRenderer.drawMap(currentDistance);
-        this.engine.updateEntities(currentDistance - this.offset);
-        this.offset = currentDistance;
+        const offset = currentDistance;
+        this.engine.updateEntities(currentDistance - offset);
         this.engine.spawnEnemy(this.engine.testNewEnemy());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
         this.slidingAnimationStart = timestamp;
@@ -155,9 +169,9 @@ export default class GameManager {
 
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
         const currentDistance = (timestamp - this.slidingAnimationStart) * speed + this.slidingStartPoint;
-        this.offset = currentDistance - toWhere;
+        const offset = currentDistance - toWhere;
         this.engine.setDistance(currentDistance);
-        this.frameRenderer.drawMap(toWhere, this.offset);
+        this.frameRenderer.drawMap(toWhere, offset);
         this.engine.spawnEnemy(this.engine.testNewEnemy());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
         if (currentDistance < toWhere)
@@ -183,6 +197,7 @@ export default class GameManager {
             }),
             this.bridgeCenters[this.playerData.bridge - 1]
         );
+        this.soundPlayer.playSound("flightStart");
         this.draw(0);
     }
 
@@ -214,6 +229,7 @@ export default class GameManager {
     frameUpdate(delta: number) {
         if (!this.playerDeathTimestamp) {
             this.playerData.fuel = Math.max(0, this.playerData.fuel - delta / 500);
+            if (this.playerData.fuel < 25) this.soundPlayer.playSound("lowFuel");
         }
         for (let i = 0; i < this.bridgeDistances.length; i++) {
             if (this.bridgeDistances[i] > this.engine.getDistance()) break;
@@ -240,7 +256,7 @@ export default class GameManager {
             this.playerDeathTimestamp = timestamp;
             this.playerData.lifes--;
             this.playerData.fuel = 100;
-            if (this.playerData.lifes === 0) this.gameOver();
+            if (this.playerData.lifes === -1) this.gameOver();
         }
     }
 
@@ -253,7 +269,7 @@ export default class GameManager {
         if (!highscore || parseInt(highscore) < this.playerData.points) {
             localStorage.setItem("highscore", this.playerData.points.toString());
             this.playerData.highscore = this.playerData.points;
-            this.playerData.points = 0
+            this.playerData.points = 0;
         }
     }
 }

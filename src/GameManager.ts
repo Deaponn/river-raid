@@ -19,25 +19,29 @@ export default class GameManager {
     private readonly textureManager: TextureManager;
     private readonly context: CanvasRenderingContext2D;
     private readonly pressedKeys: Keys;
-    private readonly playerData: PlayerData = {
-        lifes: 3,
+    readonly playerData: PlayerData = {
+        lifes: 1,
         points: 0,
         highscore: parseInt(localStorage.getItem("highscore") || "0"),
         fuel: 100,
         bridge: 1,
         gameId: 1,
     };
-    private readonly bridgeDistances = [458, 3316, 6176, 9028, 11866, 14698, 17554, 20404, 23258, 26112];
-    private readonly bridgeCenters = [400, 406, 378, 410, 373, 363, 426, 442, 433, 385];
+    private readonly bridgeDistances = [446, 3306, 6168, 9028, 11880, 14716, 17550, 20404, 23258, 26108];
+    private readonly bridgeCenters = [398, 400, 406, 378, 410, 373, 363, 426, 442, 433, 395];
     private readonly soundPlayer: SoundManager;
+    private readonly frameRenderer: FrameRenderer;
     private engine: Engine;
-    private frameRenderer: FrameRenderer;
-    private currentBridgeDistance = 458; // 458
-    private slidingAnimationStart = 0;
-    private slidingStartPoint = 0; // 0
+    private currentBridgeDistance: number
+    private slidingAnimationStart: number
+    private slidingStartPoint: number
     private playerDeathTimestamp: number | null;
     private previousTimestamp: number | null;
     private slideShowId: number;
+    private previousSlideShowTimestamp: number
+    private gameOverFlag: boolean = false
+    private readonly newGame: () => void
+    private slideShowStart: number
 
     constructor(
         context: CanvasRenderingContext2D,
@@ -45,18 +49,21 @@ export default class GameManager {
         textureManager: TextureManager,
         pressedKeys: Keys,
         soundPlayer: SoundManager,
+        newGame: () => void
     ) {
         this.context = context;
         this.textureManager = textureManager;
         this.soundPlayer = soundPlayer;
         this.frameRenderer = frameRenderer;
         this.pressedKeys = pressedKeys;
+        this.newGame = newGame
         this.bootUp();
     }
 
     bootUp(prevTimestamp: number | null = null) {
-        this.currentBridgeDistance = 458; // 458
-        this.slidingAnimationStart = prevTimestamp || 0;
+        if(this.gameOverFlag) return
+        this.currentBridgeDistance = 446; // 446, 458
+        this.slidingAnimationStart = performance.now();
         this.slidingStartPoint = 0; // 0
         this.playerDeathTimestamp = null;
         this.previousTimestamp = prevTimestamp;
@@ -84,12 +91,12 @@ export default class GameManager {
                 cancelAnimationFrame(this.slideShowId);
                 this.engine.setDistance(0);
                 this.engine.showcasing = false;
-                this.slideIntoView(0, 458, 0.6);
+                this.slideIntoView(0, this.currentBridgeDistance, 0.6);
                 this.frameRenderer.gameStarted = true;
             },
             { once: true }
         );
-        this.slideShow(0);
+        this.slideShow(performance.now());
         this.frameRenderer.drawTextAnimation(0);
         // first bridge: 458, second bridge: 3316, third bridge: 6176, fourth bridge: 9028,
         // fifth bridge: 11866, sixth bridge: 14698, seventh bridge: 17554, eigth bridge: 20404,
@@ -97,6 +104,7 @@ export default class GameManager {
     }
 
     playerKilled(entityType: string) {
+        if(this.gameOverFlag) return
         // this.playerData.points += points;
         this.soundPlayer.playSound("enemyDeath");
         const oldPoints = this.playerData.points;
@@ -142,32 +150,39 @@ export default class GameManager {
     }
 
     refillFuel() {
+        if(this.gameOverFlag) return
         this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.2));
         if (this.playerData.fuel === 100) this.soundPlayer.playSound("tankingFull");
         else this.soundPlayer.playSound("tanking");
     }
 
     slideShow(timestamp: number, toWhere: number = 28508, speed: number = 0.1) {
-        const currentDistance = timestamp * speed;
+        if(this.gameOverFlag) return
+        if(!this.slideShowStart) this.slideShowStart = timestamp
+        if(!this.previousSlideShowTimestamp) this.previousSlideShowTimestamp = timestamp
+        const currentDistance = (timestamp - this.slideShowStart) * speed;
         this.engine.setDistance(currentDistance);
         this.frameRenderer.drawMap(currentDistance);
-        const offset = currentDistance;
-        this.engine.updateEntities(currentDistance - offset);
+        this.engine.manageCollisions()
+        this.engine.updateEntities((timestamp - this.previousSlideShowTimestamp) / 10);
+        this.previousSlideShowTimestamp = timestamp
         this.engine.spawnEnemy(this.engine.testNewEnemy());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
         this.slidingAnimationStart = timestamp;
         if (currentDistance < toWhere) {
             this.slideShowId = requestAnimationFrame((timestamp) => {
-                this.slideShow(timestamp, toWhere, speed);
+                this.slideShow(timestamp);
             });
         }
     }
 
     riverBlink() {
+        if(this.gameOverFlag) return
         this.frameRenderer.blink();
     }
 
     slideIntoView(timestamp: number, toWhere: number, speed: number) {
+        if(this.gameOverFlag) return
         const currentDistance = (timestamp - this.slidingAnimationStart) * speed + this.slidingStartPoint;
         const offset = currentDistance - toWhere;
         this.engine.setDistance(currentDistance);
@@ -189,6 +204,7 @@ export default class GameManager {
     }
 
     startTheGame() {
+        if(this.gameOverFlag) return
         const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
         this.previousTimestamp = null;
         this.engine.beginGame(
@@ -208,11 +224,13 @@ export default class GameManager {
         this.previousTimestamp = timestamp;
         this.checkIfPlayerDied(timestamp);
         this.frameUpdate(delta);
-        if (!this.playerDeathTimestamp || timestamp - this.playerDeathTimestamp < 1000) {
+        if ((!this.playerDeathTimestamp || timestamp - this.playerDeathTimestamp < 1000) && !this.gameOverFlag) {
+            console.log("drawing", this.gameOverFlag)
             requestAnimationFrame((timestamp) => {
                 this.draw(timestamp);
             });
-        } else {
+        } else{
+            if(this.gameOverFlag) return
             this.engine.entities.length = 0;
             this.playerDeathTimestamp = null;
             this.slidingAnimationStart = timestamp;
@@ -222,6 +240,7 @@ export default class GameManager {
                     return enemy.positionY - 218 > this.currentBridgeDistance && enemy.positionY - 218 < this.currentBridgeDistance + constants.HEIGHT;
                 })
             );
+            if (this.playerData.lifes === -1) this.gameOver();
             this.slideIntoView(timestamp, this.currentBridgeDistance, 0.3);
         }
     }
@@ -256,15 +275,17 @@ export default class GameManager {
             this.playerDeathTimestamp = timestamp;
             this.playerData.lifes--;
             this.playerData.fuel = 100;
-            if (this.playerData.lifes === -1) this.gameOver();
         }
     }
 
     gameOver() {
         this.saveScore();
+        this.gameOverFlag = true
+        this.newGame()
     }
 
     saveScore() {
+        if(this.gameOverFlag) return
         const highscore = localStorage.getItem("highscore");
         if (!highscore || parseInt(highscore) < this.playerData.points) {
             localStorage.setItem("highscore", this.playerData.points.toString());

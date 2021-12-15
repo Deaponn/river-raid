@@ -84,7 +84,7 @@ export default class Engine {
         this.counter = 10;
         const canvas = document.createElement("canvas") as HTMLCanvasElement;
         canvas.classList.add("debugging");
-        // document.body.appendChild(canvas);
+        document.body.appendChild(canvas);
         this.debugCollisionContext = canvas.getContext("2d") as CanvasRenderingContext2D;
         canvas.width = 200;
         canvas.height = 100;
@@ -193,7 +193,7 @@ export default class Engine {
                 break;
             }
             case "tank": {
-                const tank = new Tank(this.nextEntityId(), data.positionX, data.positionY, 1, 0, data.direction, 0);
+                const tank = new Tank(this.nextEntityId(), data.positionX, data.positionY, 1, 0, data.direction, 0, data.shootAt);
                 this.entities.push(tank);
                 break;
             }
@@ -204,7 +204,7 @@ export default class Engine {
             }
             case "bridgeTank": {
                 const nextId = this.nextEntityId();
-                const tank = new Tank(nextId, data.positionX, data.positionY, 1, 0, data.direction, 0);
+                const tank = new Tank(nextId, data.positionX, data.positionY, 1, 0, data.direction, 0, data.shootAt);
                 tank.bridgeRiding = true;
                 tank.guarded = true;
                 const bridge = this.entities[this.entities.length - 1] as Bridge;
@@ -258,13 +258,14 @@ export default class Engine {
     }
 
     updateEntities(delta: number) {
+        // console.log("updating entities:", delta)
         const player = this.findPlayer();
         for (const entity of this.entities) {
-            if (entity.type !== "animation" && !!player) entity.move?.(delta); // moving
+            if (entity.type !== "animation" && (!!player || this.showcasing)) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
             else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
-            if (entity.ruchable && Math.random() < 0.003) (entity as MovingEntity).speedX = 1;
+            if (entity.ruchable && Math.random() < 0.5) (entity as MovingEntity).speedX = 1;
         }
     }
 
@@ -294,10 +295,6 @@ export default class Engine {
 
     manageCollisions(): void {
         const player = this.findPlayer();
-        if (!player) return;
-        const playerBoundaries = this.getEntityBoundaries(player);
-        const playerBullet = this.getEntityById(player.bulletId) as PlayerBullet;
-        const playerBulletBoundaries = this.getEntityBoundaries(playerBullet);
         for (const entity of this.entities) {
             const boundaries: Boundaries = this.getEntityBoundaries(entity);
             const collisionArea = this.mapCollisions?.getImageData(boundaries.startX, boundaries.startY, boundaries.lengthX, boundaries.lengthY) as ImageData;
@@ -313,13 +310,18 @@ export default class Engine {
             ) {
                 this.handleWaterCollision(entity as Tank);
             }
-            const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
-            if (entityCollision.collision) {
-                if (refillFuelOnCollision.includes(entity.type) && this.getEntityById(entityCollision.with)?.type === "player") {
-                    this.refillFuel();
-                } else {
-                    this.destroyEntity(entityCollision.with);
-                    this.destroyEntity(entity.id);
+            if (player) {
+                const playerBoundaries = this.getEntityBoundaries(player);
+                const playerBullet = this.getEntityById(player.bulletId) as PlayerBullet;
+                const playerBulletBoundaries = this.getEntityBoundaries(playerBullet);
+                const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
+                if (entityCollision.collision) {
+                    if (refillFuelOnCollision.includes(entity.type) && this.getEntityById(entityCollision.with)?.type === "player") {
+                        this.refillFuel();
+                    } else {
+                        this.destroyEntity(entityCollision.with);
+                        this.destroyEntity(entity.id);
+                    }
                 }
             }
         }

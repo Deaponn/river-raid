@@ -35,7 +35,12 @@ async function firstRun() {
     await textureManager.load();
     soundManager.playSound("boot");
     const frameRenderer = new FrameRenderer(context, interfaceContext, backgroundContext, textureManager.textures)
-    new GameManager(context, frameRenderer, textureManager, inputManager.getKeys(), soundManager)
+    newGame()
+    function newGame(){
+        new GameManager(context, frameRenderer, textureManager, inputManager.getKeys(), soundManager, ()=>{
+            newGame()    
+        })
+    }
 }
 
 firstRun();

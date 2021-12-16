@@ -21,9 +21,24 @@ canvas{
     margin: auto;
 }
 
+.hide-score{
+    width: 28%;
+    height: 5%;
+    top: 74.5%;
+    left: 23%;
+}
+
 /* DEBUGGING */
 .debugging{
     position: fixed;
     left: 50px;
     top: 50px;
+}
+
+img{
+    position: absolute;
+    z-index: 2;
+    width: 30%;
+    height: 50%;
+    margin: auto;
 }

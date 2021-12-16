@@ -17,8 +17,8 @@ export class Plane extends MovingEntity {
         movingY: MovingIndicator
     ) {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
-        this.rightDirection = 0;
-        this.currentAnimationFrame = 0;
+        this.rightDirection = 1;
+        this.currentAnimationFrame = movingX === -1 ? 0 : 1;
     }
     override move(delta: number) {
         this.positionX += ((this.speedX * this.movingX) * (delta));

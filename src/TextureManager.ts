@@ -1,5 +1,3 @@
-import { Boundaries } from "./Engine";
-
 export interface Texture {
     width: number;
     height: number;
@@ -133,10 +131,17 @@ export default class TextureManager {
         });
     }
 
-    getSprite(name: string, frame: number, boundaries: Boundaries): ImageData {
+    getSprite(name: string, frame: number): ImageData {
         if (name === "animation") return (this.textures.helicopter.sourceCanvas.getContext("2d") as CanvasRenderingContext2D).getImageData(-1, -1, 1, 1);
         const texture = this.textures[name];
         const context = texture.sourceCanvas.getContext("2d") as CanvasRenderingContext2D;
         return context.getImageData(frame * texture.frameWidth, 0, texture.frameWidth, texture.height);
+    }
+
+    getSpriteFragment(name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number): ImageData {
+        if (name === "animation") return (this.textures.helicopter.sourceCanvas.getContext("2d") as CanvasRenderingContext2D).getImageData(-1, -1, 1, 1);
+        const texture = this.textures[name];
+        const context = texture.sourceCanvas.getContext("2d") as CanvasRenderingContext2D;
+        return context.getImageData((frame * texture.frameWidth) + dx, 0 + dy, lenX, lenY);
     }
 }

@@ -34,12 +34,27 @@ async function firstRun() {
     await soundManager.load();
     await textureManager.load();
     soundManager.playSound("boot");
-    const frameRenderer = new FrameRenderer(context, interfaceContext, backgroundContext, textureManager.textures)
-    newGame()
-    function newGame(){
-        new GameManager(context, frameRenderer, textureManager, inputManager.getKeys(), soundManager, ()=>{
-            newGame()    
-        })
+    const frameRenderer = new FrameRenderer(context, interfaceContext, backgroundContext, textureManager.textures);
+    newGame();
+    function newGame() {
+        frameRenderer.gameStarted = false;
+        frameRenderer.textAnimationStart = performance.now();
+        new GameManager(context, frameRenderer, textureManager, inputManager.getKeys(), soundManager, async () => {
+            frameRenderer.textAnimationStart = performance.now();
+            frameRenderer.gameLostTextAnimation(performance.now());
+            const timeoutId = setTimeout(() => {
+                newGame();
+            }, 10000);
+            document.body.addEventListener(
+                "keydown",
+                () => {
+                    clearTimeout(timeoutId);
+                    cancelAnimationFrame(frameRenderer.gameOverAnimId);
+                    newGame();
+                },
+                { once: true }
+            );
+        });
     }
 }
 

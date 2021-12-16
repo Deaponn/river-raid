@@ -31,6 +31,11 @@ export interface EngineData {
     distance: number;
 }
 
+export interface Overlap extends Boundaries {
+    endX: number;
+    endY: number;
+}
+
 const deathFrames = [
     [1, 2, 3, 2],
     [2, 3, 4, 3],
@@ -50,6 +55,7 @@ export default class Engine {
     private readonly mapCollisions: CanvasRenderingContext2D;
     readonly entities: IEntity[];
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
+    private readonly getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
     private readonly refillFuel: () => void;
     private readonly soundPlayer: SoundManager;
@@ -58,14 +64,11 @@ export default class Engine {
     private distance = 0;
     showcasing: boolean;
 
-    //DEBUGGING:
-    private readonly debugCollisionContext: CanvasRenderingContext2D;
-    private counter: number;
-
     constructor(
         map: CanvasRenderingContext2D,
         initialOpponents: Opponent[],
         getSprite: (name: string, frame: number) => ImageData,
+        getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData,
         announcePlayerKill: (entityType: string) => void,
         refillFuel: () => void,
         soundPlayer: SoundManager
@@ -74,22 +77,10 @@ export default class Engine {
         this.entities = [];
         this.opponents = initialOpponents;
         this.getSprite = getSprite;
+        this.getSpriteFragment = getSpriteFragment;
         this.announcePlayerKill = announcePlayerKill;
         this.refillFuel = refillFuel;
         this.soundPlayer = soundPlayer;
-
-        //DEBUGGING:
-        // this.entities.push(new Helicopter(this.nextEntityId(), 400, 800, 0, 0, 0, 0));
-
-        this.counter = 10;
-        const canvas = document.createElement("canvas") as HTMLCanvasElement;
-        canvas.classList.add("debugging");
-        document.body.appendChild(canvas);
-        this.debugCollisionContext = canvas.getContext("2d") as CanvasRenderingContext2D;
-        canvas.width = 200;
-        canvas.height = 100;
-        this.debugCollisionContext.fillStyle = "black";
-        this.debugCollisionContext.fillRect(0, 0, 42, 26);
     }
 
     getData(): EngineData {
@@ -150,7 +141,11 @@ export default class Engine {
     }
 
     testNewEnemy(): Opponent | null {
-        if (this.opponents.length > 0 && this.distance + 900 > this.opponents[0].positionY) return this.opponents.shift()!;
+        if (
+            this.opponents.length > 0 &&
+            ((!this.showcasing && this.distance + 680 > this.opponents[0].positionY) || (this.showcasing && this.distance + 700 > this.opponents[0].positionY))
+        )
+            return this.opponents.shift()!;
         else return null;
     }
 
@@ -203,17 +198,16 @@ export default class Engine {
                 break;
             }
             case "bridgeTank": {
+                console.log("spawning bridge tank");
                 const nextId = this.nextEntityId();
                 const tank = new Tank(nextId, data.positionX, data.positionY, 1, 0, data.direction, 0, data.shootAt);
                 tank.bridgeRiding = true;
                 tank.guarded = true;
                 const bridge = this.entities[this.entities.length - 1] as Bridge;
                 bridge.tankId = nextId;
+                tank.dontShootAfter = tank.movingX === 1 ? bridge.positionX - bridge.width / 2 : bridge.positionX + bridge.width / 2;
                 this.entities.push(tank);
             }
-            // default: {
-            //     console.log("unsupported spawn type: ", data.type);
-            // }
         }
     }
 
@@ -241,7 +235,7 @@ export default class Engine {
         }
         if (input[" "]?.press) this.entityShoot(player);
         if (input.w?.press) {
-            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 30, player.maxSpeedY);
+            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 70, player.maxSpeedY);
             this.soundPlayer.playSound("fastFlight");
         } else {
             player.speedY = 1;
@@ -258,14 +252,13 @@ export default class Engine {
     }
 
     updateEntities(delta: number) {
-        // console.log("updating entities:", delta)
         const player = this.findPlayer();
         for (const entity of this.entities) {
-            if (entity.type !== "animation" && (!!player || this.showcasing)) entity.move?.(delta); // moving
+            if (entity.type !== "animation" && (!!player || this.showcasing) && this.distance + 600 > entity.positionY) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
             else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
-            if (entity.ruchable && Math.random() < 0.5) (entity as MovingEntity).speedX = 1;
+            if (entity.ruchable && Math.random() < 0.002) (entity as MovingEntity).speedX = 1;
         }
     }
 
@@ -354,10 +347,21 @@ export default class Engine {
     ): { collision: false; with?: number } | { collision: true; with: number } {
         if (omitCollisionWithPlayer.includes(entity.type)) return { collision: false };
         if (playerBullet && this.collisionBetweenBoundaries(playerBulletBoundaries, boundaries)) {
-            return { collision: this.collisionBetweenSprites(playerBullet, entity), with: playerBullet.id };
+            return {
+                collision:
+                    this.collisionBetweenSprites(playerBullet, playerBulletBoundaries, entity, boundaries) &&
+                    entity.type !== "bullet" &&
+                    entity.type !== "tankBullet",
+                with: playerBullet.id,
+            };
         }
         if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
-            return { collision: this.collisionBetweenSprites(player, entity), with: player.id };
+            return {
+                collision:
+                    this.collisionBetweenSprites(player, playerBoundaries, entity, boundaries) ||
+                    (entity.type === "bullet" && entity.currentAnimationFrame === 0),
+                with: player.id,
+            };
         } else return { collision: false };
     }
 
@@ -374,12 +378,46 @@ export default class Engine {
         else return false;
     }
 
-    collisionBetweenSprites(playerOrHisBullet: Player | PlayerBullet, entity: IEntity): boolean {
-        // const firstSprite = this.getSprite(playerOrHisBullet.type, playerOrHisBullet.currentAnimationFrame);
-        // const secondSprite = this.getSprite(entity.type, entity.currentAnimationFrame);
-        // this.debugCollisionContext.putImageData(secondSprite, 0, 0);
-        // this.debugCollisionContext.putImageData(firstSprite, 20, 15);
-        return true;
+    collisionBetweenSprites(
+        playerOrHisBullet: Player | PlayerBullet,
+        playerOrHisBulletBoundaries: Boundaries,
+        entity: IEntity,
+        entityBoundaries: Boundaries
+    ): boolean {
+        const overlap: Overlap = {
+            startX: Math.max(playerOrHisBulletBoundaries.startX, entityBoundaries.startX),
+            startY: Math.max(playerOrHisBulletBoundaries.startY, entityBoundaries.startY),
+            endX: Math.min(playerOrHisBulletBoundaries.startX + playerOrHisBulletBoundaries.lengthX, entityBoundaries.startX + entityBoundaries.lengthX),
+            endY: Math.min(playerOrHisBulletBoundaries.startY + playerOrHisBulletBoundaries.lengthY, entityBoundaries.startY + entityBoundaries.lengthY),
+            lengthX: 0,
+            lengthY: 0,
+        };
+
+        overlap.lengthX = Math.abs(overlap.startX - overlap.endX);
+        overlap.lengthY = Math.abs(overlap.startY - overlap.endY);
+
+        if (overlap.lengthX < 1 || overlap.lengthY < 1) return false;
+
+        const dx1 = Math.abs(playerOrHisBulletBoundaries.startX - overlap.startX);
+        const dy1 = Math.abs(playerOrHisBulletBoundaries.startY - overlap.startY);
+        const dx2 = Math.abs(entityBoundaries.startX - overlap.startX);
+        const dy2 = Math.abs(entityBoundaries.startY - overlap.startY);
+
+        const playerOrHisBulletSpriteFragment = this.getSpriteFragment(
+            playerOrHisBullet.type,
+            playerOrHisBullet.currentAnimationFrame,
+            dx1,
+            dy1,
+            overlap.lengthX,
+            overlap.lengthY
+        );
+        const entitySpriteFragment = this.getSpriteFragment(entity.type, entity.currentAnimationFrame, dx2, dy2, overlap.lengthX, overlap.lengthY);
+
+        for (let i = 0; i < playerOrHisBulletSpriteFragment.data.length; i += 4) {
+            if (playerOrHisBulletSpriteFragment.data[i + 3] !== 0 && entitySpriteFragment.data[i + 3] !== 0) return true;
+        }
+
+        return false;
     }
 
     getEntityBoundaries(entity: IEntity | null): Boundaries {
@@ -394,9 +432,10 @@ export default class Engine {
 
     handleTerrainCollision(entity: Entity) {
         if (destroyOnCollision.includes(entity.type)) this.destroyEntity(entity.id);
-        if (bounceOnCollision.includes(entity.type)) {
+        if (bounceOnCollision.includes(entity.type) && this.distance + 600 > entity.positionY) {
             const movingEntity = entity as MovingEntity;
             movingEntity.changeMovement("x", -movingEntity.movingX as MovingIndicator);
+            // movingEntity.move(0.8)
         }
     }
 
@@ -469,7 +508,7 @@ export default class Engine {
                 if (!noPoints) this.announcePlayerKill("bridge");
                 this.createAnimatedEntity(this.entities[indexToDestroy], 0);
                 const bridge = this.entities[indexToDestroy] as Bridge;
-                if (bridge.tankId) {
+                if (bridge.tankId && this.getEntityById(bridge.tankId)) {
                     const tank = this.getEntityById(bridge.tankId) as Tank;
                     tank.speedX = 0;
                     tank.bridgeRiding = false;

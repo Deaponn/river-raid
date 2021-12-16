@@ -13,8 +13,13 @@ export default class FrameRenderer {
     private readonly textures: Textures;
     private readonly interface: Interface;
     private readonly mapLength = 28508;
+    private readonly scoreCanvasContext: CanvasRenderingContext2D;
     private previousInterfaceData: PlayerData;
     gameStarted = false;
+    textAnimationStart = performance.now();
+    gameOverAnimId: number
+    scoreBlinkId: NodeJS.Timer;
+    scoreBlinkId2: NodeJS.Timer;
     constructor(
         context: CanvasRenderingContext2D,
         interfaceContext: CanvasRenderingContext2D,
@@ -36,6 +41,12 @@ export default class FrameRenderer {
         this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
         this.interfaceContext.font = "28px atari";
+
+        const canvas = document.createElement("canvas") as HTMLCanvasElement;
+        this.scoreCanvasContext = canvas.getContext("2d") as CanvasRenderingContext2D;
+        canvas.classList.add("hide-score");
+        document.body.appendChild(canvas);
+        this.scoreCanvasContext.fillStyle = "#606060";
     }
 
     draw(engineData: EngineData, playerData: PlayerData) {
@@ -45,7 +56,6 @@ export default class FrameRenderer {
     }
 
     drawMap(distance: number, offset = 0) {
-        // console.log("drawing map distance: ", distance)
         this.context.clearRect(0, 0, constants.WIDTH, constants.HEIGHT);
         this.context.drawImage(
             this.textures.map.sourceCanvas,
@@ -111,15 +121,16 @@ export default class FrameRenderer {
 
     drawTextAnimation(timestamp: number) {
         // console.log(timestamp)
+        const elapsed = timestamp - this.textAnimationStart;
         this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
         this.interfaceContext.fillRect(0, 552, 800, 48);
         this.interfaceContext.fillStyle = "#c0c0c0";
         this.interfaceContext.fillText(
             "RIVER RAID TM by Bartosz Sajecki            Copyright 2021                      Press ANY key to begin playing",
-            constants.WIDTH - ((timestamp / 5) % 4000),
+            constants.WIDTH - ((elapsed / 5) % 4000),
             580
         );
-        this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 1640 + constants.WIDTH - ((timestamp / 5) % 4000), 562);
+        this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 1640 + constants.WIDTH - ((elapsed / 5) % 4000), 562);
         if (!this.gameStarted) {
             requestAnimationFrame((timestamp) => {
                 this.drawTextAnimation(timestamp);
@@ -128,6 +139,37 @@ export default class FrameRenderer {
             this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
             this.interfaceContext.fillRect(0, 552, 800, 48);
             this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 100, 562);
+        }
+    }
+
+    scoreBlink() {
+        this.scoreBlinkId2 = setTimeout(() => {
+            this.scoreCanvasContext.fillRect(0, 0, 999999, 999999);
+        }, 700);
+        this.scoreBlinkId = setInterval(() => {
+            this.scoreCanvasContext.clearRect(0, 0, 999999, 999999);
+            this.scoreBlinkId2 = setTimeout(() => {
+                this.scoreCanvasContext.fillRect(0, 0, 999999, 999999);
+            }, 700);
+        }, 1400);
+    }
+
+    stopScoreBlink() {
+        clearInterval(this.scoreBlinkId);
+        clearInterval(this.scoreBlinkId2);
+        this.scoreCanvasContext.clearRect(0, 0, 999999, 999999);
+    }
+
+    gameLostTextAnimation(timestamp: number) {
+        const elapsed = timestamp - this.textAnimationStart;
+        this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
+        this.interfaceContext.fillRect(0, 552, 800, 48);
+        this.interfaceContext.fillStyle = "#c0c0c0";
+        this.interfaceContext.fillText(".........GAME OVER.........", constants.WIDTH - ((elapsed / 5) % 4000), 580);
+        if (elapsed < 10000) {
+            this.gameOverAnimId = requestAnimationFrame((timestamp) => {
+                this.gameLostTextAnimation(timestamp);
+            });
         }
     }
 

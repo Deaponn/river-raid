@@ -21,6 +21,7 @@ export default class SoundManager {
     tankShootIterator = 0;
     constructor() {
         this.sources = [
+            { path: "absolute_win.mp3", canPlayMultiple: false },
             { path: "boot.mp3", canPlayMultiple: false },
             { path: "enemyDeath.mp3", canPlayMultiple: true },
             { path: "fastFlight.mp3", canPlayMultiple: false },
@@ -41,13 +42,11 @@ export default class SoundManager {
     async load() {
         for (const src of this.sources) {
             if (src.canPlayMultiple) {
-                console.log("can play multiple");
                 await this.loadAudio(src, "0");
                 await this.loadAudio(src, "1");
                 await this.loadAudio(src, "2");
                 await this.loadAudio(src, "3");
                 await this.loadAudio(src, "4");
-                console.log(this.audios);
             } else await this.loadAudio(src);
         }
     }
@@ -114,6 +113,9 @@ export default class SoundManager {
             this.audios["enemyDeath" + this.enemyDeathIterator.toString()].audio.play();
         }
         if (name === "lowFuel") this.audios.lowFuel.audio.play();
+        if (name === "tanking") this.audios.tanking.audio.play();
+        if (name === "tankingFull") this.audios.tankingFull.audio.play();
+        if (name === "absolute_win") this.audios.absolute_win.audio.play();
     }
 
     stopSound(name: string) {

@@ -16,6 +16,7 @@ const interfaceCanvas: HTMLCanvasElement = document.getElementById("interface") 
 const interfaceContext = interfaceCanvas.getContext("2d") as CanvasRenderingContext2D;
 const backgroundCanvas: HTMLCanvasElement = document.getElementById("background") as HTMLCanvasElement;
 const backgroundContext = backgroundCanvas.getContext("2d") as CanvasRenderingContext2D;
+const closeInfo = document.getElementById("close") as HTMLDivElement
 context.imageSmoothingEnabled = false;
 
 setDimensions(gameCanvas);
@@ -56,6 +57,10 @@ async function firstRun() {
             );
         });
     }
+}
+
+closeInfo.onclick = () => {
+    (document.getElementById("instructions") as HTMLDivElement).style.display = "none"
 }
 
 firstRun();

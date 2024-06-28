@@ -5,27 +5,12 @@ import opponents, { Opponent } from "./opponents";
 import { Keys } from "./InputManager";
 import constants from "./Constants";
 import SoundManager from "./SoundManager";
-
-export interface PlayerData {
-    points: number;
-    lifes: number;
-    fuel: number;
-    highscore: number;
-    gameId: number;
-    bridge: number;
-}
+import Player, { PlayerData } from "./gameElements/Player";
 
 export default class GameManager {
     private readonly textureManager: TextureManager;
     private readonly pressedKeys: Keys;
-    readonly playerData: PlayerData = {
-        lifes: 4,
-        points: 0,
-        highscore: parseInt(localStorage.getItem("highscore") || "0"),
-        fuel: 100,
-        bridge: 1,
-        gameId: 1,
-    };
+    readonly playerData: PlayerData = Player.initialPlayerData();
     private readonly bridgeDistances = [446, 3306, 6168, 9028, 11880, 14716, 17550, 20404, 23258, 26108];
     private readonly bridgeCenters = [398, 400, 406, 378, 410, 373, 363, 426, 442, 433, 395];
     private readonly soundPlayer: SoundManager;
@@ -47,6 +32,7 @@ export default class GameManager {
         textureManager: TextureManager,
         pressedKeys: Keys,
         soundPlayer: SoundManager,
+        onResize: () => void,
         newGame: () => void
     ) {
         this.textureManager = textureManager;
@@ -54,10 +40,10 @@ export default class GameManager {
         this.frameRenderer = frameRenderer;
         this.pressedKeys = pressedKeys;
         this.newGame = newGame;
-        this.bootUp();
+        this.bootUp(null, onResize);
     }
 
-    bootUp(prevTimestamp: number | null = null) {
+    bootUp(prevTimestamp: number | null = null, onResize: () => void) {
         if (this.gameOverFlag) return;
         this.currentBridgeDistance = 446; // [446, 3306, 6168, 9028, 11880, 14716, 17550, 20404, 23258, 26108]
         this.slidingAnimationStart = performance.now();
@@ -94,6 +80,10 @@ export default class GameManager {
             },
             { once: true }
         );
+        window.onresize = () => {
+            onResize();
+            this.frameRenderer.resizeDraw(this.engine.getData(), this.playerData, this.engine.getDistance());
+        }
         this.slideShow(performance.now());
         this.frameRenderer.drawTextAnimation(performance.now());
         // first bridge: 458, second bridge: 3316, third bridge: 6176, fourth bridge: 9028,
@@ -155,6 +145,7 @@ export default class GameManager {
     }
 
     slideShow(timestamp: number, toWhere: number = 28508, speed: number = 0.1) {
+        this.frameRenderer.resizeDraw(this.engine.getData(), this.playerData, this.engine.getDistance());
         if (this.gameOverFlag) return;
         if (!this.slideShowStart) this.slideShowStart = timestamp;
         if (!this.previousSlideShowTimestamp) this.previousSlideShowTimestamp = timestamp;

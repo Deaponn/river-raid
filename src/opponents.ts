@@ -90,7 +90,7 @@ const opponents: Opponent[] = [
     { type: "fuel", positionX: 560, positionY: 5952, direction: 1 },
     { type: "helicopter", positionX: 550, positionY: 6032, direction: 1, moving: false, shooting: false },
     { type: "helicopter", positionX: 550, positionY: 6232, direction: -1, moving: false, shooting: false },
-    { type: "bridge", positionX: 406, positionY: 6385, direction: 1, moving: false, shooting: false },
+    { type: "bridge", positionX: 406, positionY: 6385, direction: 1 },
     { type: "bridgeTank", positionX: 20, positionY: 6366, direction: 1, moving: true, shooting: false, shootAt: 390 },
     { type: "balloon", positionX: 516, positionY: 6575, direction: 1, moving: false, shooting: false },
     { type: "fuel", positionX: 306, positionY: 6785, direction: 1 },

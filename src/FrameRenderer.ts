@@ -3,7 +3,7 @@ import constants from "./Constants";
 import Interface from "./interfaceElements/Interface";
 import { EngineData } from "./Engine";
 import { IEntity } from "./gameElements/components/Entity";
-import { PlayerData } from "./GameManager";
+import { PlayerData } from "./gameElements/Player";
 import { Textures } from "./TextureManager";
 
 export default class FrameRenderer {
@@ -38,8 +38,7 @@ export default class FrameRenderer {
             this.textures.digits_black,
             this.textures.digits_yellow
         );
-        this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
-        this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
+        this.fillBackground();
         this.interfaceContext.font = "28px atari";
 
         const canvas = document.createElement("canvas") as HTMLCanvasElement;
@@ -73,8 +72,18 @@ export default class FrameRenderer {
         this.context.fillRect(0, offset + 454, constants.WIDTH, constants.HEIGHT);
     }
 
-    drawInterface(data: PlayerData) {
-        if (JSON.stringify(this.previousInterfaceData) !== JSON.stringify(data)) this.interface.draw(data);
+    resizeDraw(engineData: EngineData, playerData: PlayerData, distance: number) {
+        this.context.beginPath();
+        this.drawMap(distance);
+        this.drawInterface(playerData, true);
+        this.drawEntities(engineData.entities, engineData.distance);
+        this.fillBackground();
+        this.drawTextAnimation(0);
+    }
+
+    drawInterface(data: PlayerData, force: boolean = false) {
+        this.interfaceContext.font = "28px atari";
+        if (JSON.stringify(this.previousInterfaceData) !== JSON.stringify(data) || force) this.interface.draw(data);
         this.previousInterfaceData = JSON.parse(JSON.stringify(data));
     }
 
@@ -117,6 +126,11 @@ export default class FrameRenderer {
     blackout() {
         this.context.fillStyle = "rgba(0,0,0,1)";
         this.context.fillRect(0, 0, 800, 600);
+    }
+
+    fillBackground() {
+        this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+        this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
     }
 
     drawTextAnimation(timestamp: number) {

@@ -11,6 +11,15 @@ const playerMovingY = 1;
 const bulletWidth = 4;
 const bulletHeight = 10;
 
+export interface PlayerData {
+    points: number;
+    lifes: number;
+    fuel: number;
+    highscore: number;
+    gameId: number;
+    bridge: number;
+}
+
 export default class Player extends SAMEntity {
     readonly type = "player";
     readonly maxSpeedX = 3
@@ -31,5 +40,16 @@ export default class Player extends SAMEntity {
         this.hasBullet = true;
         this.bulletId = id
         return new PlayerBullet(id, this, this.positionX, this.positionY, bulletWidth, bulletHeight, 0, 10, 0, 1);
+    }
+
+    static initialPlayerData(): PlayerData {
+        return {
+            lifes: 4,
+            points: 0,
+            highscore: parseInt(localStorage.getItem("highscore") || "0"),
+            fuel: 100,
+            bridge: 1,
+            gameId: 1,
+        };
     }
 }

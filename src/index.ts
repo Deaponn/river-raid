@@ -4,6 +4,7 @@ import constants from "./Constants";
 import SoundManager from "./SoundManager";
 import TextureManager from "./TextureManager";
 import FrameRenderer from "./FrameRenderer";
+import Player from "./gameElements/Player";
 
 function setDimensions(canvas: HTMLCanvasElement) {
     canvas.width = constants.WIDTH;
@@ -22,11 +23,6 @@ context.imageSmoothingEnabled = false;
 setDimensions(gameCanvas);
 setDimensions(interfaceCanvas);
 setDimensions(backgroundCanvas);
-window.onresize = () => {
-    setDimensions(gameCanvas);
-    setDimensions(interfaceCanvas);
-    setDimensions(backgroundCanvas);
-};
 
 const soundManager = new SoundManager();
 const textureManager = new TextureManager();
@@ -40,22 +36,28 @@ async function firstRun() {
     function newGame() {
         frameRenderer.gameStarted = false;
         frameRenderer.textAnimationStart = performance.now();
-        new GameManager(frameRenderer, textureManager, inputManager.getKeys(), soundManager, async () => {
-            frameRenderer.textAnimationStart = performance.now();
-            frameRenderer.gameLostTextAnimation(performance.now());
-            const timeoutId = setTimeout(() => {
-                newGame();
-            }, 10000);
-            document.body.addEventListener(
-                "keydown",
-                () => {
-                    clearTimeout(timeoutId);
-                    cancelAnimationFrame(frameRenderer.gameOverAnimId);
+        new GameManager(frameRenderer, textureManager, inputManager.getKeys(), soundManager, () => {
+                setDimensions(gameCanvas);
+                setDimensions(interfaceCanvas);
+                setDimensions(backgroundCanvas);
+            }, 
+            async () => {
+                frameRenderer.textAnimationStart = performance.now();
+                frameRenderer.gameLostTextAnimation(performance.now());
+                const timeoutId = setTimeout(() => {
                     newGame();
-                },
-                { once: true }
-            );
-        });
+                }, 10000);
+                document.body.addEventListener(
+                    "keydown",
+                    () => {
+                        clearTimeout(timeoutId);
+                        cancelAnimationFrame(frameRenderer.gameOverAnimId);
+                        newGame();
+                    },
+                    { once: true }
+                );
+            }
+        );
     }
 }
 

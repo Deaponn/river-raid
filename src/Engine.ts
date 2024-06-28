@@ -287,10 +287,12 @@ export default class Engine {
     }
 
     manageCollisions(): void {
+        const currentMap = this.mapCollisions.getImageData(0, 0, 800, 600);
+
         const player = this.findPlayer();
         for (const entity of this.entities) {
             const boundaries: Boundaries = this.getEntityBoundaries(entity);
-            const collisionArea = this.mapCollisions?.getImageData(boundaries.startX, boundaries.startY, boundaries.lengthX, boundaries.lengthY) as ImageData;
+            const collisionArea = new RectangularRegion(currentMap, boundaries);
             if (
                 !omitTerrainCollision.includes(entity.type) &&
                 this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries), entity.type === "player")
@@ -320,17 +322,16 @@ export default class Engine {
         }
     }
 
-    checkTerrainCollision(area: ImageData, entityFrame: ImageData, deeperCheck: boolean): boolean {
-        // if (area.data.length !== entityFrame.data.length) this.debugCollisionContext.putImageData(entityFrame, 0, 0);
-        for (let i = 0; i < area.data.length; i += 4) {
-            if (area.data[i + 3] !== 3 && (!deeperCheck || ((area.data[i + 1] >= 60 || area.data[i] === 0) && entityFrame.data[i + 3] !== 0))) return true; // #003900
+    checkTerrainCollision(region: RectangularRegion, entityFrame: ImageData, deeperCheck: boolean): boolean {
+        for (let i = 0; i < region.size; i += 4) {
+            if (region.getNthValue(i + 3) !== 3 && (!deeperCheck || ((region.getNthValue(i + 1) >= 60 || region.getNthValue(i) === 0) && entityFrame.data[i + 3] !== 0))) return true; // #003900
         }
         return false;
     }
 
-    checkWaterCollision(area: ImageData, entityFrame: ImageData): boolean {
-        for (let i = 0; i < area.data.length; i += 4) {
-            if ((area.data[i] === 63 || area.data[i + 3] === 3) && entityFrame.data[i + 3] !== 0) return true;
+    checkWaterCollision(region: RectangularRegion, entityFrame: ImageData): boolean {
+        for (let i = 0; i < region.size; i += 4) {
+            if ((region.getNthValue(i) === 63 || region.getNthValue(i + 3) === 3) && entityFrame.data[i + 3] !== 0) return true;
         }
         return false;
     }
@@ -544,5 +545,33 @@ export default class Engine {
             }
         }
         this.entities.splice(indexToDestroy, 1);
+    }
+}
+
+class RectangularRegion {
+    private readonly data: Uint8ClampedArray;
+    private readonly real_width: number;
+    private readonly boundary_width: number;
+    private readonly start_point: number;
+    readonly size: number;
+
+    constructor(source: ImageData, boundary: Boundaries) {
+        this.data = source.data;
+        this.real_width = source.width * 4;
+        this.boundary_width = boundary.lengthX * 4;
+        this.start_point = Math.floor(boundary.startX) * 4 + Math.floor(boundary.startY) * this.real_width;
+        this.size = 4 * boundary.lengthX * boundary.lengthY;
+    }
+
+    getNthValue(n: number): number {
+        if (n > this.size) {
+            console.log("wrong n given!");
+            return 0;
+        }
+
+        const whole_lines = Math.floor(n / this.boundary_width);
+        const last_line = n % this.boundary_width;
+
+        return this.data[this.start_point + this.real_width * whole_lines + last_line];
     }
 }

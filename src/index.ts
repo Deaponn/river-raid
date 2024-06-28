@@ -11,7 +11,7 @@ function setDimensions(canvas: HTMLCanvasElement) {
 }
 
 const gameCanvas: HTMLCanvasElement = document.getElementById("main") as HTMLCanvasElement;
-const context = gameCanvas.getContext("2d") as CanvasRenderingContext2D;
+const context = gameCanvas.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
 const interfaceCanvas: HTMLCanvasElement = document.getElementById("interface") as HTMLCanvasElement;
 const interfaceContext = interfaceCanvas.getContext("2d") as CanvasRenderingContext2D;
 const backgroundCanvas: HTMLCanvasElement = document.getElementById("background") as HTMLCanvasElement;

@@ -112,7 +112,7 @@ export default class TextureManager {
         return new Promise((resolve, reject) => {
             const image: HTMLImageElement = new Image();
             const canvas: HTMLCanvasElement = document.createElement("canvas");
-            const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+            const context = canvas.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
             const name = source.path.replace(/\..*/, "");
             image.src = catalog + source.path;
             image.onload = (event: Event) => {

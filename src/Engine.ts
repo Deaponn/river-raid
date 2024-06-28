@@ -52,7 +52,7 @@ const stopOnNoCollision = ["tank"];
 const animatedMovement = ["helicopter", "shootingHelicopter", "tank"];
 
 export default class Engine {
-    private readonly mapCollisions: CanvasRenderingContext2D;
+    private readonly mapCollisions: ImageData;
     readonly entities: IEntity[];
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
     private readonly getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData;
@@ -65,7 +65,7 @@ export default class Engine {
     showcasing: boolean;
 
     constructor(
-        map: CanvasRenderingContext2D,
+        map: ImageData,
         initialOpponents: Opponent[],
         getSprite: (name: string, frame: number) => ImageData,
         getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData,
@@ -254,7 +254,7 @@ export default class Engine {
     updateEntities(delta: number) {
         const player = this.findPlayer();
         for (const entity of this.entities) {
-            if (entity.type !== "animation" && (!!player || this.showcasing) && this.distance + 600 > entity.positionY) entity.move?.(delta); // moving
+            if (entity.type !== "animation" && (!!player || this.showcasing) && this.distance + 600 > entity.positionY - entity.height) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
             else if (animatedMovement.includes(entity.type)) entity.changeFrame(); // updating move animation
@@ -287,12 +287,11 @@ export default class Engine {
     }
 
     manageCollisions(): void {
-        const currentMap = this.mapCollisions.getImageData(0, 0, 800, 600);
-
         const player = this.findPlayer();
         for (const entity of this.entities) {
             const boundaries: Boundaries = this.getEntityBoundaries(entity);
-            const collisionArea = new RectangularRegion(currentMap, boundaries);
+            const collisionArea = new RectangularRegion(this.mapCollisions, boundaries, this.distance);
+            if (entity.type === "playerBullet" && boundaries.startY < 0) this.handleTerrainCollision(entity);
             if (
                 !omitTerrainCollision.includes(entity.type) &&
                 this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries), entity.type === "player")
@@ -555,11 +554,11 @@ class RectangularRegion {
     private readonly start_point: number;
     readonly size: number;
 
-    constructor(source: ImageData, boundary: Boundaries) {
+    constructor(source: ImageData, boundary: Boundaries, distance: number) {
         this.data = source.data;
         this.real_width = source.width * 4;
         this.boundary_width = boundary.lengthX * 4;
-        this.start_point = Math.floor(boundary.startX) * 4 + Math.floor(boundary.startY) * this.real_width;
+        this.start_point = Math.floor(boundary.startX) * 4 + (source.height - Math.floor(distance) + Math.floor(boundary.startY) - 600) * this.real_width;
         this.size = 4 * boundary.lengthX * boundary.lengthY;
     }
 

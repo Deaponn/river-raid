@@ -40,7 +40,7 @@ async function firstRun() {
     function newGame() {
         frameRenderer.gameStarted = false;
         frameRenderer.textAnimationStart = performance.now();
-        new GameManager(context, frameRenderer, textureManager, inputManager.getKeys(), soundManager, async () => {
+        new GameManager(frameRenderer, textureManager, inputManager.getKeys(), soundManager, async () => {
             frameRenderer.textAnimationStart = performance.now();
             frameRenderer.gameLostTextAnimation(performance.now());
             const timeoutId = setTimeout(() => {

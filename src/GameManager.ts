@@ -17,7 +17,6 @@ export interface PlayerData {
 
 export default class GameManager {
     private readonly textureManager: TextureManager;
-    private readonly context: CanvasRenderingContext2D;
     private readonly pressedKeys: Keys;
     readonly playerData: PlayerData = {
         lifes: 4,
@@ -44,14 +43,12 @@ export default class GameManager {
     private slideShowStart: number;
 
     constructor(
-        context: CanvasRenderingContext2D,
         frameRenderer: FrameRenderer,
         textureManager: TextureManager,
         pressedKeys: Keys,
         soundPlayer: SoundManager,
         newGame: () => void
     ) {
-        this.context = context;
         this.textureManager = textureManager;
         this.soundPlayer = soundPlayer;
         this.frameRenderer = frameRenderer;
@@ -68,7 +65,7 @@ export default class GameManager {
         this.playerDeathTimestamp = null;
         this.previousTimestamp = prevTimestamp;
         this.engine = new Engine(
-            this.context,
+            this.textureManager.getSprite("map", 0),
             JSON.parse(JSON.stringify(opponents)),
             this.textureManager.getSprite.bind(this.textureManager),
             this.textureManager.getSpriteFragment.bind(this.textureManager),

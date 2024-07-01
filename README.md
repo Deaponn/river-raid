@@ -37,27 +37,38 @@ A page refresh (F5) might be necessary after you had lost the entire game and fa
 
 ### Usage
 
-To run the code locally, you need to clone this repository, build the project and serve its files. Follow the step below.<br>
+To run the code locally, you need to clone this repository, build the project and serve its files. Follow the steps below.<br>
 
+1. Clone the repository
 ```
-1.
 git clone git@github.com:Deaponn/riverRaid.git
+```
 (or)
+```
 git clone https://github.com/Deaponn/riverRaid.git
-
-2.
-npm i
-
-3.
-npm run build
-(or)
-npm run dev
-
-4.
-npm run start (not needed when you used npm run dev before)
 ```
 
-After those commands, go to `localhost:3000` in your browser and enjoy the game!
+2. Download dependencies
+```
+npm i
+```
+
+3. Build the project or run it in development state
+```
+npm run build
+```
+(or)
+```
+npm run dev
+```
+
+4. Run the project
+```
+npm run start
+```
+(not needed when you used npm run dev before)
+
+5. Go to `localhost:3000` in your browser and enjoy the game!
 
 ### TODO
 

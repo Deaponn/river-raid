@@ -58,8 +58,8 @@ export default class GameManager {
             (entityType: string) => {
                 this.playerKilled(entityType);
             },
-            () => {
-                this.refillFuel();
+            (delta: number) => {
+                this.refillFuel(delta);
             },
             this.soundPlayer
         );
@@ -137,9 +137,9 @@ export default class GameManager {
         if (oldPoints % 10000 > this.playerData.points % 10000) this.playerData.lifes++;
     }
 
-    refillFuel() {
+    refillFuel(delta: number) {
         if (this.gameOverFlag) return;
-        this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.3));
+        this.playerData.fuel = Math.min(100, (this.playerData.fuel += 0.5 * delta));
         if (this.playerData.fuel === 100) this.soundPlayer.playSound("tankingFull");
         else this.soundPlayer.playSound("tanking");
     }
@@ -152,7 +152,7 @@ export default class GameManager {
         const currentDistance = (timestamp - this.slideShowStart) * speed;
         this.engine.setDistance(currentDistance);
         this.frameRenderer.drawMap(currentDistance);
-        this.engine.manageCollisions();
+        this.engine.manageCollisions((timestamp - this.previousSlideShowTimestamp) / 10);
         this.engine.purgeEntities();
         this.engine.updateEntities((timestamp - this.previousSlideShowTimestamp) / 10);
         this.previousSlideShowTimestamp = timestamp;
@@ -269,9 +269,7 @@ export default class GameManager {
             if (this.engine.getDistance() > 28922) {
                 const gif = new Image();
                 gif.src = "assets/gameplay/absolute_win.gif";
-                console.log(gif);
                 gif.onload = () => {
-                    console.log(gif);
                     document.body.append(gif);
                     this.soundPlayer.playSound("absolute_win");
                 };

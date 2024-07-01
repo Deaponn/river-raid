@@ -32,14 +32,13 @@ export default class Player extends SAMEntity {
         super(id, positionX, currentDistance + distanceOffset, playerWidth, playerHeight, playerSpeedX, playerSpeedY, playerMovingX, playerMovingY);
         this.currentAnimationFrame = 1;
         this.rightDirection = 2;
-        console.log(this.positionX)
     }
 
     override createBullet(id: number): null | PlayerBullet {
         if (this.hasBullet) return null;
         this.hasBullet = true;
         this.bulletId = id
-        return new PlayerBullet(id, this, this.positionX, this.positionY, bulletWidth, bulletHeight, 0, 10, 0, 1);
+        return new PlayerBullet(id, this, this.positionX, this.positionY, bulletWidth, bulletHeight, 0, 15, 0, 1);
     }
 
     static initialPlayerData(): PlayerData {

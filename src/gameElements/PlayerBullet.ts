@@ -19,8 +19,8 @@ export default class PlayerBullet extends Bullet {
         super(id, owner, positionX, positionY, width, height, speedX, speedY, movingX, movingY, 0);
     }
 
-    override move() {
+    move(delta: number) {
         this.positionX = this.owner.positionX;
-        this.positionY += this.speedY * this.movingY;
+        this.positionY += delta * this.speedY * this.movingY;
     }
 }

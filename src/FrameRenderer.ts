@@ -104,7 +104,7 @@ export default class FrameRenderer {
 
     drawEntity(entity: IEntity | AnimationEntity, distance: number) {
         let entityTexture = entity.type !== "animation" ? this.textures[entity.type] : this.textures[(entity as AnimationEntity).animatedEntity];
-        if (entity.type === "tankBullet") entityTexture = this.textures.bullet;
+        if (entity.type === "tankBullet" || (entity as AnimationEntity).animatedEntity === "tankBullet") entityTexture = this.textures.bullet;
         this.context.fillStyle = "rgba(255,0,255,0.3)";
         if (entityTexture) {
             this.context.drawImage(
@@ -118,12 +118,6 @@ export default class FrameRenderer {
                 entityTexture.frameWidth,
                 entityTexture.height
             );
-            // this.context.fillRect(
-            //     Math.round(entity.positionX) - entity.width / 2,
-            //     600 - Math.round(entity.positionY - distance - entity.height / 2) + (entity.hitboxOffsetY || 0),
-            //     entity.width,
-            //     entity.height
-            // );
         } else {
             console.log("not drawing entity: ", entity);
         }

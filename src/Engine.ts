@@ -57,7 +57,7 @@ export default class Engine {
     private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
     private readonly getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
-    private readonly refillFuel: () => void;
+    private readonly refillFuel: (delta: number) => void;
     private readonly soundPlayer: SoundManager;
     private opponents: Opponent[];
     private entityCounter = 0;
@@ -70,7 +70,7 @@ export default class Engine {
         getSprite: (name: string, frame: number) => ImageData,
         getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData,
         announcePlayerKill: (entityType: string) => void,
-        refillFuel: () => void,
+        refillFuel: (delta: number) => void,
         soundPlayer: SoundManager
     ) {
         this.mapCollisions = map;
@@ -116,7 +116,7 @@ export default class Engine {
     triggerRefresh(delta: number, input: Keys): void {
         this.purgeEntities();
         this.spawnEnemy(this.testNewEnemy());
-        this.handleInput(input);
+        this.handleInput(delta, input);
         this.calculate(delta);
     }
 
@@ -198,7 +198,6 @@ export default class Engine {
                 break;
             }
             case "bridgeTank": {
-                console.log("spawning bridge tank");
                 const nextId = this.nextEntityId();
                 const tank = new Tank(nextId, data.positionX, data.positionY, 1, 0, data.direction, 0, data.shootAt);
                 tank.bridgeRiding = true;
@@ -218,16 +217,16 @@ export default class Engine {
         );
     }
 
-    handleInput(input: Keys): void {
+    handleInput(delta: number, input: Keys): void {
         const player = this.findPlayer();
         if (!player) return;
         if (input.a?.press) {
             player.changeMovement("x", -1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeedX);
+            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30 * delta, player.maxSpeedX);
         }
         if (input.d?.press) {
             player.changeMovement("x", 1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30, player.maxSpeedX);
+            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30 * delta, player.maxSpeedX);
         }
         if ((input.a?.press && input.d?.press) || (!input.a?.press && !input.d?.press)) {
             player.changeMovement("x", 0);
@@ -235,7 +234,7 @@ export default class Engine {
         }
         if (input[" "]?.press) this.entityShoot(player);
         if (input.w?.press) {
-            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 70, player.maxSpeedY);
+            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 70 * delta, player.maxSpeedY);
             this.soundPlayer.playSound("fastFlight");
         } else {
             player.speedY = 1;
@@ -245,7 +244,7 @@ export default class Engine {
 
     calculate(delta: number): void {
         const player = this.findPlayer();
-        this.manageCollisions();
+        this.manageCollisions(delta);
         this.updateEntities(delta);
         if (player && player.speedY === 1) this.distance += delta;
         else this.distance += delta * (player?.speedY || 0);
@@ -286,7 +285,7 @@ export default class Engine {
         }
     }
 
-    manageCollisions(): void {
+    manageCollisions(delta: number): void {
         const player = this.findPlayer();
         for (const entity of this.entities) {
             const boundaries: Boundaries = this.getEntityBoundaries(entity);
@@ -294,7 +293,7 @@ export default class Engine {
             if (entity.type === "playerBullet" && boundaries.startY < 0) this.handleTerrainCollision(entity);
             if (
                 !omitTerrainCollision.includes(entity.type) &&
-                this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries), entity.type === "player")
+                this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries))
             ) {
                 this.handleTerrainCollision(entity);
             }
@@ -311,7 +310,7 @@ export default class Engine {
                 const entityCollision = this.checkEntityCollision(entity, boundaries, player, playerBullet, playerBoundaries, playerBulletBoundaries);
                 if (entityCollision.collision) {
                     if (refillFuelOnCollision.includes(entity.type) && this.getEntityById(entityCollision.with)?.type === "player") {
-                        this.refillFuel();
+                        this.refillFuel(delta);
                     } else {
                         this.destroyEntity(entityCollision.with);
                         this.destroyEntity(entity.id);
@@ -321,9 +320,9 @@ export default class Engine {
         }
     }
 
-    checkTerrainCollision(region: RectangularRegion, entityFrame: ImageData, deeperCheck: boolean): boolean {
+    checkTerrainCollision(region: RectangularRegion, entityFrame: ImageData): boolean {
         for (let i = 0; i < region.size; i += 4) {
-            if (region.getNthValue(i + 3) !== 3 && (!deeperCheck || ((region.getNthValue(i + 1) >= 60 || region.getNthValue(i) === 0) && entityFrame.data[i + 3] !== 0))) return true; // #003900
+            if (region.getNthValue(i + 3) !== 3 && (region.getNthValue(i + 1) >= 60 || region.getNthValue(i) === 0) && entityFrame.data[i + 3] !== 0) return true; // #003900
         }
         return false;
     }
@@ -459,6 +458,7 @@ export default class Engine {
         const indexToDestroy = this.entities.findIndex((entity: Entity) => {
             return entity.id === id;
         });
+        if (this.entities[indexToDestroy] == undefined) return;
         switch (this.entities[indexToDestroy].type) {
             case "player": {
                 // handle losing here

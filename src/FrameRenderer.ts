@@ -85,6 +85,7 @@ export default class FrameRenderer {
         this.drawInterface(playerData, true);
         this.drawEntities(engineData.entities, engineData.distance);
         this.fillBackground();
+        if (this.gameStarted) this.drawTextAnimation(0);
     }
 
     drawInterface(data: PlayerData, force: boolean = false) {

@@ -1,25 +1,71 @@
+![Game link](https://img.shields.io/badge/Live%20URL-red?label=sajecki.ct8.pl&link=https%3A%2F%2Fsajecki.ct8.pl%2Fgames%2Friver-raid%2F)
+
+
 # River Raid
 
-River Raid reproduction using TypeScript
+Reproduction of 8-bit Atari game River Raid using TypeScript.<br>
+The game is a close copy and it was playtested next to an emulator of the source material. My teacher told me that he feels young again when he started to play :)<br>
+<b>Everything</b> is made using pure Typescript and HTML Canvas API.
 
-You can play the game at https://sajecki-bartosz-riverraid.herokuapp.com/
+### You can play the game [here](https://sajecki.ct8.pl/games/river-raid/)
 
-IMPORTANT:
-Using Chrome is highly recommended as it is far more efficient than Firefox
+<img src="readme.png">
+
+### How to play
+
+Your objective is to kill as many enemies as you can and don't die yourself. Destroy your enemies and their bridges to save your allies! Glory to the victorious!
 
 Controls:
-ANY BUTTON - start the game
-W - accelerate
-A - turn left
-D - turn right
-Space - shoot
+- ANY BUTTON - start the game,
+- W - accelerate,
+- A - turn left,
+- D - turn right,
+- Space - shoot.
 
-How to play:
-Use your bullets to destroy enemies. Don't let them fly into you or shoot at you.
-The further you go, the more enemies appear who are more difficult to overcome.
-Fly over a Fuel to refill your planes fuel. You can also destroy it if you want more points.
-Bridges are checkpoints.
-Every 10.000 points you get an extra life.
-Your highscore saves when you lose the game.
+<br>
 
+Rules:
+- Use your bullets to destroy enemies. Don't let them fly into you or shoot at you,
+- The further you go, the more enemies appear who are more difficult to overcome,
+- Fly over a Fuel to refill your tank. You can also destroy it if you want more points,
+- Passing a bridge is a checkpoint,
+- Every 10.000 points you get an extra life,
+- Your highscore is saved in localstorage when you loose the game.
+
+<br>
 A page refresh (F5) might be necessary after you had lost the entire game and fancy a new one.
+
+### Usage
+
+To run the code locally, you need to clone this repository, build the project and serve its files. Follow the step below.<br>
+
+```
+1.
+git clone git@github.com:Deaponn/riverRaid.git
+(or)
+git clone https://github.com/Deaponn/riverRaid.git
+
+2.
+npm i
+
+3.
+npm run build
+(or)
+npm run dev
+
+4.
+npm run start (not needed when you used npm run dev before)
+```
+
+After those commands, go to `localhost:3000` in your browser and enjoy the game!
+
+### TODO
+
+Things I would like to work on in the near future
+
+- (feature) add additional mapping for arrow keys controls
+- (feature) add slowing under S key
+- (feature) add interpolation of player's bullets so they won't miss a target when the framerate is low
+- (bugfix) fix the bug after restarting the game after loosing without refreshing the page
+- (bugfix) implement bouncing of enemies when they collide with terrain since currently they sometimes get stuck
+- (bugfix) fix shooting helicopter's bullets collision with the terrain

@@ -100,7 +100,7 @@ export default class Engine {
     }
 
     putEnemiesData(enemiesToSpawn: Opponent[]) {
-        this.opponents = enemiesToSpawn;
+        this.opponents = JSON.parse(JSON.stringify(enemiesToSpawn));
     }
 
     addPlayer(positionX: number) {

@@ -52,7 +52,7 @@ export default class GameManager {
         this.previousTimestamp = prevTimestamp;
         this.engine = new Engine(
             this.textureManager.getSprite("map", 0),
-            JSON.parse(JSON.stringify(opponents)),
+            opponents,
             this.textureManager.getSprite.bind(this.textureManager),
             this.textureManager.getSpriteFragment.bind(this.textureManager),
             (entityType: string) => {
@@ -65,8 +65,7 @@ export default class GameManager {
         );
         this.frameRenderer.blackout();
         this.frameRenderer.drawInterface(this.playerData);
-        const enemiesCopy = JSON.parse(JSON.stringify(opponents)) as Opponent[];
-        this.engine.putEnemiesData(enemiesCopy);
+        this.engine.putEnemiesData(opponents);
         this.engine.showcasing = true;
         document.body.addEventListener(
             "keydown",
@@ -75,6 +74,7 @@ export default class GameManager {
                 cancelAnimationFrame(this.slideShowId);
                 this.engine.setDistance(0);
                 this.engine.showcasing = false;
+                this.engine.putEnemiesData(opponents);
                 this.slideIntoView(0, this.currentBridgeDistance, 0.6);
                 this.frameRenderer.gameStarted = true;
             },

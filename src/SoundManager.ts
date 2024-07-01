@@ -53,7 +53,7 @@ export default class SoundManager {
 
     async loadAudio(source: Source, iterator: string = ""): Promise<void> {
         return new Promise((resolve, reject) => {
-            const audio: HTMLAudioElement = new Audio("../assets/sound/" + source.path);
+            const audio: HTMLAudioElement = new Audio("assets/sound/" + source.path);
             const name = source.path.replace(/\..*/, "");
             if (name === "flightStart") {
                 audio.addEventListener("ended", (event: Event) => {

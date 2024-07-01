@@ -1,22 +1,16 @@
-import MovingEntity from "./components/MovingEntity";
+import Entity from "./components/Entity";
 import { MovingIndicator } from "./components/MovingEntity";
 
 const width = 30
 const height = 48
 
-export class Fuel extends MovingEntity {
+export class Fuel extends Entity {
     readonly type = "fuel";
     constructor(
         id: number,
         positionX: number,
-        positionY: number,
-        speedX: number,
-        speedY: number,
-        movingX: MovingIndicator,
-        movingY: MovingIndicator
+        positionY: number
     ) {
-        super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
-        this.rightDirection = 0;
-        this.currentAnimationFrame = 0;
+        super(id, positionX, positionY, width, height);
     }
 }

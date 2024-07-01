@@ -101,10 +101,10 @@ export default class TextureManager {
 
     async load() {
         for (let i = 0; i < this.gameplaySourceList.length; i++) {
-            await this.loadTexture(this.gameplaySourceList[i], "../assets/gameplay/");
+            await this.loadTexture(this.gameplaySourceList[i], "assets/gameplay/");
         }
         for (let i = 0; i < this.interfaceSourceList.length; i++) {
-            await this.loadTexture(this.interfaceSourceList[i], "../assets/interface/");
+            await this.loadTexture(this.interfaceSourceList[i], "assets/interface/");
         }
     }
 

@@ -268,7 +268,7 @@ export default class GameManager {
             this.playerData.fuel = 100;
             if (this.engine.getDistance() > 28922) {
                 const gif = new Image();
-                gif.src = "../assets/gameplay/absolute_win.gif";
+                gif.src = "assets/gameplay/absolute_win.gif";
                 console.log(gif);
                 gif.onload = () => {
                     console.log(gif);

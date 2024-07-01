@@ -178,7 +178,7 @@ export default class Engine {
                 break;
             }
             case "bridge": {
-                const bridge = new Bridge(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                const bridge = new Bridge(this.nextEntityId(), data.positionX, data.positionY);
                 this.entities.push(bridge);
                 break;
             }
@@ -193,7 +193,7 @@ export default class Engine {
                 break;
             }
             case "fuel": {
-                const fuel = new Fuel(this.nextEntityId(), data.positionX, data.positionY, 0, 0, data.direction, 0);
+                const fuel = new Fuel(this.nextEntityId(), data.positionX, data.positionY);
                 this.entities.push(fuel);
                 break;
             }

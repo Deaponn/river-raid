@@ -14,6 +14,13 @@ export default class FrameRenderer {
     private readonly interface: Interface;
     private readonly mapLength = 28508;
     private readonly scoreCanvasContext: CanvasRenderingContext2D;
+    private static readonly blinkData: { color: string, time: number }[] = [
+        { color: "rgba(45,50,184,1)", time: 100 },
+        { color: "#500e5d", time: 100 },
+        { color: "rgba(45,50,184,1)", time: 100 },
+        { color: "#500e5d", time: 100 },
+        { color: "rgba(45,50,184,1)", time: 100 },
+    ];
     private previousInterfaceData: PlayerData;
     gameStarted = false;
     textAnimationStart = performance.now();
@@ -78,7 +85,6 @@ export default class FrameRenderer {
         this.drawInterface(playerData, true);
         this.drawEntities(engineData.entities, engineData.distance);
         this.fillBackground();
-        this.drawTextAnimation(0);
     }
 
     drawInterface(data: PlayerData, force: boolean = false) {
@@ -134,18 +140,17 @@ export default class FrameRenderer {
     }
 
     drawTextAnimation(timestamp: number) {
-        // console.log(timestamp)
-        const elapsed = timestamp - this.textAnimationStart;
-        this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
-        this.interfaceContext.fillRect(0, 552, 800, 48);
-        this.interfaceContext.fillStyle = "#c0c0c0";
-        this.interfaceContext.fillText(
-            "RIVER RAID TM by Bartosz Sajecki            Copyright 2021                      Press ANY key to begin playing",
-            constants.WIDTH - ((elapsed / 5) % 4000),
-            580
-        );
-        this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 1640 + constants.WIDTH - ((elapsed / 5) % 4000), 562);
         if (!this.gameStarted) {
+            const elapsed = timestamp - this.textAnimationStart; 
+            this.interfaceContext.fillStyle = "rgba(0,0,0,1)";
+            this.interfaceContext.fillRect(0, 552, 800, 48);
+            this.interfaceContext.fillStyle = "#c0c0c0";
+            this.interfaceContext.fillText(
+                "RIVER RAID TM by Bartosz Sajecki            Copyright 2021                      Press ANY key to begin playing",
+                constants.WIDTH - ((elapsed / 5) % 4000),
+                580
+            );
+            this.interfaceContext.drawImage(this.textures.activision.sourceCanvas, 1640 + constants.WIDTH - ((elapsed / 5) % 4000), 562);
             requestAnimationFrame((timestamp) => {
                 this.drawTextAnimation(timestamp);
             });
@@ -187,7 +192,7 @@ export default class FrameRenderer {
         }
     }
 
-    blink() {
+    async blink() {
         this.backgroundContext.fillStyle = "#500e5d";
         this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
         if (Math.random() > 0.5) {
@@ -196,26 +201,16 @@ export default class FrameRenderer {
                 this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
             }, 300);
         } else {
-            setTimeout(() => {
-                this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
+            for (let index = 0; index < FrameRenderer.blinkData.length; index++) {
+                let { color, time } = FrameRenderer.blinkData[index];
+                this.backgroundContext.fillStyle = color;
                 this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                setTimeout(() => {
-                    this.backgroundContext.fillStyle = "#500e5d";
-                    this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                    setTimeout(() => {
-                        this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
-                        this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                        setTimeout(() => {
-                            this.backgroundContext.fillStyle = "#500e5d";
-                            this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                            setTimeout(() => {
-                                this.backgroundContext.fillStyle = "rgba(45,50,184,1)";
-                                this.backgroundContext.fillRect(0, 0, constants.WIDTH, constants.HEIGHT);
-                            }, 100);
-                        }, 100);
-                    }, 100);
-                }, 100);
-            }, 100);
+                await FrameRenderer.wait(time);
+            }
         }
+    }
+
+    static wait(time: number) {
+        return new Promise(res => setTimeout(res, time))
     }
 }

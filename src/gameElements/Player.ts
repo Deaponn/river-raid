@@ -24,6 +24,7 @@ export default class Player extends SAMEntity {
     readonly type = "player";
     readonly maxSpeedX = 3
     readonly maxSpeedY = 2.5
+    readonly minSpeedY = 0.5
     speedY = 2
     bulletId: number
     hasBullet: boolean = false;

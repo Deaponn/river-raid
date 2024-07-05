@@ -36,7 +36,7 @@ async function firstRun() {
     function newGame() {
         frameRenderer.gameStarted = false;
         frameRenderer.textAnimationStart = performance.now();
-        new GameManager(frameRenderer, textureManager, inputManager.getKeys(), soundManager, () => {
+        new GameManager(frameRenderer, textureManager, () => inputManager.getActions(), soundManager, () => {
                 setDimensions(gameCanvas);
                 setDimensions(interfaceCanvas);
                 setDimensions(backgroundCanvas);

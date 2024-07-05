@@ -3,6 +3,11 @@
     src: url(./assets/atari-font.ttf);
 }
 
+:root {
+    --border-style: 3px solid rgb(255, 184, 90);
+    --background-style: rgb(212, 235, 255);
+}
+
 body {
     margin: 0;
     width: 100vw;
@@ -20,12 +25,12 @@ canvas{
 #close {
     position: absolute;
     color: crimson;
-    background-color: azure;
-    border: 2px solid black;
+    background-color: var(--background-style);
+    border: 3px solid black;
     text-align: center;
     font-size: 18px;
     cursor: pointer;
-    left: 252px;
+    left: 250px;
     top: -12px;
 }
 
@@ -37,31 +42,35 @@ canvas{
     position: fixed;
     left: 10px;
     top: calc(50% - 150px);
-    height: 240px;
+    height: fit-content;
     width: 250px;
-    background-color: aliceblue;
-    border: 2px solid antiquewhite;
+    background-color: var(--background-style);
+    border: var(--border-style);
     font-family: atari;
     cursor: default;
     z-index: 1;
     padding: 15px;
 }
 
-#instructions div {
+#instructions .key {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
+    }
+    
 #moreinfo {
-    margin-top: -5px;
-    margin-left: 25px;
+    position: absolute;
+    bottom: -20px;
+    left: calc(50% - 100px);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
     padding: 0;
     font-family: initial;
     width: 200px;
-    height: 30px;
-    border: 2px solid antiquewhite;
-    background-color: aliceblue;
+    height: 40px;
+    border: var(--border-style);
+    background-color: var(--background-style);
 }
 
 #text {
@@ -76,7 +85,8 @@ canvas{
     width: 430px;
     text-align: left;
     padding: 5px;
-    font-size: 16px;
+    font-size: 20px;
+    margin-left: -50px;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
@@ -84,8 +94,8 @@ canvas{
     display: block;
     position: absolute;
     left: 242px;
-    background-color: aliceblue;
-    border: 2px solid antiquewhite;
+    background-color: var(--background-style);
+    border: var(--border-style);
 }
 
 .hide-score{
@@ -93,13 +103,6 @@ canvas{
     height: 5%;
     top: 74.5%;
     left: 23%;
-}
-
-/* DEBUGGING */
-.debugging{
-    position: fixed;
-    left: 50px;
-    top: 50px;
 }
 
 img{

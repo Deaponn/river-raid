@@ -25,6 +25,7 @@ export default class SoundManager {
             { path: "boot.mp3", canPlayMultiple: false },
             { path: "enemyDeath.mp3", canPlayMultiple: true },
             { path: "fastFlight.mp3", canPlayMultiple: false },
+            { path: "slowFlight.mp3", canPlayMultiple: false },
             { path: "flight.mp3", canPlayMultiple: false },
             { path: "helicopterShoot.mp3", canPlayMultiple: true },
             { path: "playerDeath.mp3", canPlayMultiple: false },
@@ -60,6 +61,12 @@ export default class SoundManager {
                     this.muteFlights = false;
                 });
             }
+            if (name === "flight" || name === "fastFlight" || name === "slowFlight") {
+                audio.addEventListener('ended', function() {
+                    this.currentTime = 0;
+                    this.play();
+                }, false);
+            }
             audio.addEventListener("canplaythrough", (event: Event) => {
                 this.audios[name + iterator] = {
                     audio,
@@ -77,13 +84,20 @@ export default class SoundManager {
             this.audios.flightStart.audio.currentTime = 0
             this.audios.flightStart.audio.play();
         }
-        if (name === "flight" && !this.muteFlights) {
+        if (name === "flight" && !this.muteFlights && this.audios.flight.audio.paused) {
             this.stopSound("fastFlight");
+            this.stopSound("slowFlight");
             this.audios.flight.audio.play();
         }
         if (name === "fastFlight" && !this.muteFlights) {
             this.stopSound("flight");
+            this.stopSound("slowFlight");
             this.audios.fastFlight.audio.play();
+        }
+        if (name === "slowFlight" && !this.muteFlights) {
+            this.stopSound("fastFlight");
+            this.stopSound("flight");
+            this.audios.slowFlight.audio.play();
         }
         if (name === "boot") this.audios.boot.audio.play();
         if (name === "playerDeath") {

@@ -226,9 +226,12 @@ export default class Engine {
             player.speedX + (player.speedX + 1) / 30 * delta, 
             player.maxSpeedX
         );
-        player.speedY = Math.min(
-            player.speedY + verticalAction * (player.speedY + 1) / 70 * delta, 
-            player.maxSpeedY
+        player.speedY = Math.max(
+            Math.min(
+                player.speedY + verticalAction * (player.speedY + 1) / 70 * delta, 
+                player.maxSpeedY
+            ), 
+            player.minSpeedY
         );
         if (verticalAction === 0) player.speedY = 1;
         switch (verticalAction) {
@@ -236,6 +239,10 @@ export default class Engine {
                 this.soundPlayer.playSound("fastFlight");
                 break;
             };
+            case -1: {
+                this.soundPlayer.playSound("slowFlight");
+                break;
+            }
             default: {
                 this.soundPlayer.playSound("flight");
             }

@@ -15,6 +15,7 @@ export default class InputManager {
         turnLeft: ["a", "A", "ArrowLeft"],
         turnRight: ["d", "D", "ArrowRight"],
         accelerate: ["w", "W", "ArrowUp"],
+        slowDown: ["s", "S", "ArrowDown"],
         shoot: [" ", "z", "Z"]
     };
     constructor(htmlElement: HTMLElement) {
@@ -40,6 +41,7 @@ export default class InputManager {
             if (value && InputManager.bindings.turnLeft.includes(key)) horizontalCount--;
             if (value && InputManager.bindings.turnRight.includes(key)) horizontalCount++;
             if (value && InputManager.bindings.accelerate.includes(key)) verticalCount++;
+            if (value && InputManager.bindings.slowDown.includes(key)) verticalCount--;
             if (value && InputManager.bindings.shoot.includes(key)) shoot++;
         }
         return {

@@ -19,6 +19,7 @@ Controls:
 - ANY BUTTON - start the game,
 - W - accelerate,
 - A - turn left,
+- S - slow down,
 - D - turn right,
 - Space - shoot.
 
@@ -66,7 +67,7 @@ npm run dev
 ```
 npm run start
 ```
-(not needed when you used npm run dev before)
+(not needed when you used `npm run dev` before)
 
 5. Go to `localhost:3000` in your browser and enjoy the game!
 
@@ -74,7 +75,7 @@ npm run start
 
 Things I would like to work on in the near future
 
-- (feature) add additional mapping for arrow keys controls
+- (feature) ~~add additional mapping for arrow keys controls~~
 - (feature) add slowing under S key
 - (feature) add interpolation of player's bullets so they won't miss a target when the framerate is low
 - (bugfix) fix the bug after restarting the game after loosing without refreshing the page

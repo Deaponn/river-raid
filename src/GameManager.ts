@@ -2,14 +2,14 @@ import TextureManager from "./TextureManager";
 import FrameRenderer from "./FrameRenderer";
 import Engine from "./Engine";
 import opponents, { Opponent } from "./opponents";
-import { Keys } from "./InputManager";
+import { Actions } from "./InputManager";
 import constants from "./Constants";
 import SoundManager from "./SoundManager";
 import Player, { PlayerData } from "./gameElements/Player";
 
 export default class GameManager {
     private readonly textureManager: TextureManager;
-    private readonly pressedKeys: Keys;
+    private readonly getActions: () => Actions;
     readonly playerData: PlayerData = Player.initialPlayerData();
     private readonly bridgeDistances = [446, 3306, 6168, 9028, 11880, 14716, 17550, 20404, 23258, 26108];
     private readonly bridgeCenters = [398, 400, 406, 378, 410, 373, 363, 426, 442, 433, 395];
@@ -30,7 +30,7 @@ export default class GameManager {
     constructor(
         frameRenderer: FrameRenderer,
         textureManager: TextureManager,
-        pressedKeys: Keys,
+        getActions: () => Actions,
         soundPlayer: SoundManager,
         onResize: () => void,
         newGame: () => void
@@ -38,7 +38,7 @@ export default class GameManager {
         this.textureManager = textureManager;
         this.soundPlayer = soundPlayer;
         this.frameRenderer = frameRenderer;
-        this.pressedKeys = pressedKeys;
+        this.getActions = getActions;
         this.newGame = newGame;
         this.bootUp(null, onResize);
     }
@@ -249,13 +249,13 @@ export default class GameManager {
         if (this.playerData.fuel === 0 && this.engine.getPlayerAlive()) this.engine.destroyEntity(this.engine.findPlayer()!.id);
         if (this.bridgeDistances[this.playerData.bridge] < this.engine.getDistance()) this.playerData.bridge++;
         this.frameRenderer.drawMap(this.engine.getDistance());
-        this.engine.triggerRefresh(delta / 10, this.pressedKeys);
+        this.engine.triggerRefresh(delta / 10, this.getActions());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
     }
 
     frameUpdateForSlideShow(delta: number) {
         this.frameRenderer.drawMap(this.engine.getDistance());
-        this.engine.triggerRefresh(delta / 10, this.pressedKeys);
+        this.engine.triggerRefresh(delta / 10, this.getActions());
         this.frameRenderer.draw(this.engine.getData(), this.playerData);
     }
 

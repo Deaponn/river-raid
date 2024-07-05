@@ -8,7 +8,7 @@ import SAMEntity from "./gameElements/components/SAMEntity";
 import { Balloon } from "./gameElements/Balloon";
 import { Helicopter } from "./gameElements/Helicopter";
 import { Ship } from "./gameElements/Ship";
-import { Keys } from "./InputManager";
+import { Actions } from "./InputManager";
 import MovingEntity, { MovingIndicator } from "./gameElements/components/MovingEntity";
 import AnimationEntity from "./gameElements/components/AnimationEntity";
 import { Plane } from "./gameElements/Plane";
@@ -113,10 +113,10 @@ export default class Engine {
         this.addPlayer(positionX);
     }
 
-    triggerRefresh(delta: number, input: Keys): void {
+    triggerRefresh(delta: number, actions: Actions): void {
         this.purgeEntities();
         this.spawnEnemy(this.testNewEnemy());
-        this.handleInput(delta, input);
+        this.handleInput(delta, actions);
         this.calculate(delta);
     }
 
@@ -217,29 +217,30 @@ export default class Engine {
         );
     }
 
-    handleInput(delta: number, input: Keys): void {
+    handleInput(delta: number, actions: Actions): void {
         const player = this.findPlayer();
         if (!player) return;
-        if (input.a?.press) {
-            player.changeMovement("x", -1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30 * delta, player.maxSpeedX);
+        const { horizontalAction, verticalAction, shoot } = actions;
+        player.changeMovement("x", horizontalAction);
+        player.speedX = Math.abs(horizontalAction) * Math.min(
+            player.speedX + (player.speedX + 1) / 30 * delta, 
+            player.maxSpeedX
+        );
+        player.speedY = Math.min(
+            player.speedY + verticalAction * (player.speedY + 1) / 70 * delta, 
+            player.maxSpeedY
+        );
+        if (verticalAction === 0) player.speedY = 1;
+        switch (verticalAction) {
+            case 1: {
+                this.soundPlayer.playSound("fastFlight");
+                break;
+            };
+            default: {
+                this.soundPlayer.playSound("flight");
+            }
         }
-        if (input.d?.press) {
-            player.changeMovement("x", 1);
-            player.speedX = Math.min(player.speedX + (player.speedX + 1) / 30 * delta, player.maxSpeedX);
-        }
-        if ((input.a?.press && input.d?.press) || (!input.a?.press && !input.d?.press)) {
-            player.changeMovement("x", 0);
-            player.speedX = 0;
-        }
-        if (input[" "]?.press) this.entityShoot(player);
-        if (input.w?.press) {
-            player.speedY = Math.min(player.speedY + (player.speedY + 1) / 70 * delta, player.maxSpeedY);
-            this.soundPlayer.playSound("fastFlight");
-        } else {
-            player.speedY = 1;
-            this.soundPlayer.playSound("flight");
-        }
+        if (shoot === 1) this.entityShoot(player);
     }
 
     calculate(delta: number): void {

@@ -78,6 +78,8 @@ Things I would like to work on in the near future
 - (feature) ~~add additional mapping for arrow keys controls~~
 - (feature) ~~add slowing under S key~~
 - (feature) add interpolation of player's bullets so they won't miss a target when the framerate is low
-- (bugfix) fix the bug after restarting the game after loosing without refreshing the page
+- (QoL) make flight sound loop sound nicer
+- (QoL) look into graphical stutter (I honestly have no idea where to begin because Chrome profiler makes it look like everything is OK, there are no heavy performance issues)
+- (bugfix) fix the bug after restarting the whole game after loosing without refreshing the page
 - (bugfix) implement bouncing of enemies when they collide with terrain since currently they sometimes get stuck
-- (bugfix) fix shooting helicopter's bullets collision with the terrain
+- (bugfix) ~~fix shooting helicopter's bullets collision with the terrain~~

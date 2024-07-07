@@ -54,7 +54,7 @@ const animatedMovement = ["helicopter", "shootingHelicopter", "tank"];
 export default class Engine {
     private readonly mapCollisions: ImageData;
     readonly entities: IEntity[];
-    private readonly getSprite: (name: string, frame: number, boundaries: Boundaries) => ImageData;
+    private readonly getSprite: (name: string, frame: number) => ImageData;
     private readonly getSpriteFragment: (name: string, frame: number, dx: number, dy: number, lenX: number, lenY: number) => ImageData;
     private readonly announcePlayerKill: (entityType: string) => void;
     private readonly refillFuel: (delta: number) => void;
@@ -301,13 +301,13 @@ export default class Engine {
             if (entity.type === "playerBullet" && boundaries.startY < 0) this.handleTerrainCollision(entity);
             if (
                 !omitTerrainCollision.includes(entity.type) &&
-                this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries))
+                this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame))
             ) {
                 this.handleTerrainCollision(entity);
             }
             if (
                 stopOnNoCollision.includes(entity.type) &&
-                this.checkWaterCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame, boundaries))
+                this.checkWaterCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame))
             ) {
                 this.handleWaterCollision(entity as Tank);
             }
@@ -364,9 +364,7 @@ export default class Engine {
         }
         if (this.collisionBetweenBoundaries(playerBoundaries, boundaries)) {
             return {
-                collision:
-                    this.collisionBetweenSprites(player, playerBoundaries, entity, boundaries) ||
-                    (entity.type === "bullet" && entity.currentAnimationFrame === 0),
+                collision: this.collisionBetweenSprites(player, playerBoundaries, entity, boundaries),
                 with: player.id,
             };
         } else return { collision: false };

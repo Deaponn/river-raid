@@ -104,6 +104,7 @@ export default class SoundManager {
             this.audios.playerDeath.audio.play();
             this.stopSound("flight")
             this.stopSound("fastFlight")
+            this.stopSound("slowFlight")
             this.stopSound("flightStart")
         }
         if (name === "playerShoot") {

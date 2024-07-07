@@ -18,6 +18,6 @@ export default class SAMEntity extends MovingEntity {
     }
 
     createBullet(id: number): Bullet | null{
-        return new Bullet(id, this, this.positionX + (this.width / 2 * this.movingX), this.positionY, 8, 2, 5, 0, this.movingX, 0, 16)
+        return new Bullet(id, this, this.positionX + (this.width / 2 * this.movingX), this.positionY, 28, 18, 1, 0, this.movingX, 0, 0)
     }
 }

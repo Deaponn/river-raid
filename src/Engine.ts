@@ -45,7 +45,7 @@ const deathFrames = [
 
 const refillFuelOnCollision = ["fuel"];
 const omitCollisionWithPlayer = ["player", "playerBullet", "animation", "tankBullet"];
-const omitTerrainCollision = ["plane", "animation", "tank", "tankBullet"];
+const omitTerrainCollision = ["plane", "animation", "tank", "tankBullet", "bridge"];
 const destroyOnCollision = ["player", "playerBullet", "bullet"];
 const bounceOnCollision = ["helicopter", "shootingHelicopter", "ship", "balloon"];
 const stopOnNoCollision = ["tank"];

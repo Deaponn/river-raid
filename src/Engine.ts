@@ -303,7 +303,17 @@ export default class Engine {
                 !omitTerrainCollision.includes(entity.type) &&
                 this.checkTerrainCollision(collisionArea, this.getSprite(entity.type, entity.currentAnimationFrame))
             ) {
-                this.handleTerrainCollision(entity);
+                const bounced = this.handleTerrainCollision(entity);
+
+                if (bounced) {
+                    let newBoundaries: Boundaries = this.getEntityBoundaries(entity);
+                    let newCollisionArea = new RectangularRegion(this.mapCollisions, newBoundaries, this.distance);
+                    while (this.checkTerrainCollision(newCollisionArea, this.getSprite(entity.type, entity.currentAnimationFrame))) {
+                        entity.positionX += 1 * (entity as MovingEntity).movingX;
+                        newBoundaries = this.getEntityBoundaries(entity);
+                        newCollisionArea = new RectangularRegion(this.mapCollisions, newBoundaries, this.distance);
+                    }
+                }   
             }
             if (
                 stopOnNoCollision.includes(entity.type) &&
@@ -435,13 +445,16 @@ export default class Engine {
         };
     }
 
-    handleTerrainCollision(entity: Entity) {
-        if (destroyOnCollision.includes(entity.type)) this.destroyEntity(entity.id);
-        if (bounceOnCollision.includes(entity.type) && this.distance + 600 > entity.positionY) {
+    handleTerrainCollision(entity: Entity): boolean {
+        if (destroyOnCollision.includes(entity.type)) {
+            this.destroyEntity(entity.id);
+            return false;
+        }
+        if (bounceOnCollision.includes(entity.type) && this.distance + 640 > entity.positionY) {
             const movingEntity = entity as MovingEntity;
             movingEntity.changeMovement("x", -movingEntity.movingX as MovingIndicator);
-            // movingEntity.move(0.8)
-        }
+            }
+        return true;
     }
 
     handleWaterCollision(tank: Tank) {

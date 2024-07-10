@@ -1,139 +1,64 @@
 interface Source {
     path: string;
+    name: string;
     canPlayMultiple: boolean;
 }
 
 interface Sound {
     currentlyPlaying: boolean;
     canPlayMultiple: boolean;
-    audio: HTMLAudioElement;
+    audio: AudioBuffer;
 }
 
 export default class SoundManager {
-    sources: Source[];
-    audios: {
+    private readonly sources: Source[] = [
+        { name: "absolute_win", path: "assets/sound/absolute_win.mp3", canPlayMultiple: false },
+        { name: "boot", path: "assets/sound/boot.mp3", canPlayMultiple: false },
+        { name: "enemyDeath", path: "assets/sound/enemyDeath.mp3", canPlayMultiple: true },
+        { name: "fastFlight", path: "assets/sound/fastFlight.mp3", canPlayMultiple: false },
+        { name: "slowFlight", path: "assets/sound/slowFlight.mp3", canPlayMultiple: false },
+        { name: "flight", path: "assets/sound/flight.mp3", canPlayMultiple: false },
+        { name: "helicopterShoot", path: "assets/sound/helicopterShoot.mp3", canPlayMultiple: true },
+        { name: "playerDeath", path: "assets/sound/playerDeath.mp3", canPlayMultiple: false },
+        { name: "playerShoot", path: "assets/sound/playerShoot.mp3", canPlayMultiple: true },
+        { name: "tanking", path: "assets/sound/tanking.mp3", canPlayMultiple: false },
+        { name: "tankingFull", path: "assets/sound/tankingFull.mp3", canPlayMultiple: false },
+        { name: "tankShoot", path: "assets/sound/tankShoot.mp3", canPlayMultiple: true },
+        { name: "lowFuel", path: "assets/sound/lowFuel.mp3", canPlayMultiple: false },
+        { name: "flightStart", path: "assets/sound/flightStart.mp3", canPlayMultiple: false },
+    ];
+    private readonly audioContext = new AudioContext();
+    private readonly muteFlight = ["flight", "slowFlight", "fastFlight"];
+    private buffers: {
         [key: string]: Sound;
-    };
-    muteFlights: boolean;
-    playerShootIterator = 0;
-    enemyDeathIterator = 0;
-    helicopterShootIterator = 0;
-    tankShootIterator = 0;
-    constructor() {
-        this.sources = [
-            { path: "absolute_win.mp3", canPlayMultiple: false },
-            { path: "boot.mp3", canPlayMultiple: false },
-            { path: "enemyDeath.mp3", canPlayMultiple: true },
-            { path: "fastFlight.mp3", canPlayMultiple: false },
-            { path: "slowFlight.mp3", canPlayMultiple: false },
-            { path: "flight.mp3", canPlayMultiple: false },
-            { path: "helicopterShoot.mp3", canPlayMultiple: true },
-            { path: "playerDeath.mp3", canPlayMultiple: false },
-            { path: "playerShoot.mp3", canPlayMultiple: true },
-            { path: "tanking.mp3", canPlayMultiple: false },
-            { path: "tankingFull.mp3", canPlayMultiple: false },
-            { path: "tankShoot.mp3", canPlayMultiple: true },
-            { path: "lowFuel.mp3", canPlayMultiple: false },
-            { path: "flightStart.mp3", canPlayMultiple: false },
-        ];
-
-        this.audios = {};
-    }
+    } = {};
+    isFlying: boolean;
 
     async load() {
         for (const src of this.sources) {
-            if (src.canPlayMultiple) {
-                await this.loadAudio(src, "0");
-                await this.loadAudio(src, "1");
-                await this.loadAudio(src, "2");
-                await this.loadAudio(src, "3");
-                await this.loadAudio(src, "4");
-            } else await this.loadAudio(src);
+            this.loadBuffer(src.path, src.name, src.canPlayMultiple);
         }
     }
 
-    async loadAudio(source: Source, iterator: string = ""): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const audio: HTMLAudioElement = new Audio("assets/sound/" + source.path);
-            const name = source.path.replace(/\..*/, "");
-            if (name === "flightStart") {
-                audio.addEventListener("ended", (event: Event) => {
-                    this.muteFlights = false;
-                });
-            }
-            if (name === "flight" || name === "fastFlight" || name === "slowFlight") {
-                audio.addEventListener('ended', function() {
-                    this.currentTime = 0;
-                    this.play();
-                }, false);
-            }
-            audio.addEventListener("canplaythrough", (event: Event) => {
-                this.audios[name + iterator] = {
-                    audio,
-                    currentlyPlaying: false,
-                    canPlayMultiple: source.canPlayMultiple,
-                };
-                resolve();
-            });
-        });
+    async loadBuffer(path: string, name: string, canPlayMultiple: boolean) {
+        const data = await fetch(path, { mode: 'cors' });
+        const buffer = await data.arrayBuffer();
+        const audio = await this.audioContext.decodeAudioData(buffer);
+        this.buffers[name] = { audio, canPlayMultiple, currentlyPlaying: false };
     }
 
     playSound(name: string) {
-        if (name === "flightStart") {
-            this.muteFlights = true;
-            this.audios.flightStart.audio.currentTime = 0
-            this.audios.flightStart.audio.play();
+        if (this.buffers[name].currentlyPlaying) return;
+        if (this.muteFlight.includes(name) && !this.isFlying) return;
+        if (!this.buffers[name].canPlayMultiple) this.buffers[name].currentlyPlaying = true;
+        
+        const sourceNode = this.audioContext.createBufferSource();
+        sourceNode.buffer = this.buffers[name].audio;
+        sourceNode.onended = () => {
+            if (name === "flightStart") this.isFlying = true;
+            this.buffers[name].currentlyPlaying = false;
         }
-        if (name === "flight" && !this.muteFlights && this.audios.flight.audio.paused) {
-            this.stopSound("fastFlight");
-            this.stopSound("slowFlight");
-            this.audios.flight.audio.play();
-        }
-        if (name === "fastFlight" && !this.muteFlights) {
-            this.stopSound("flight");
-            this.stopSound("slowFlight");
-            this.audios.fastFlight.audio.play();
-        }
-        if (name === "slowFlight" && !this.muteFlights) {
-            this.stopSound("fastFlight");
-            this.stopSound("flight");
-            this.audios.slowFlight.audio.play();
-        }
-        if (name === "boot") this.audios.boot.audio.play();
-        if (name === "playerDeath") {
-            this.audios.playerDeath.audio.play();
-            this.stopSound("flight")
-            this.stopSound("fastFlight")
-            this.stopSound("slowFlight")
-            this.stopSound("flightStart")
-        }
-        if (name === "playerShoot") {
-            if (this.playerShootIterator === 4) this.playerShootIterator = -1;
-            this.playerShootIterator++;
-            this.audios["playerShoot" + this.playerShootIterator.toString()].audio.play();
-        }
-        if (name === "helicopterShoot") {
-            if (this.helicopterShootIterator === 4) this.helicopterShootIterator = -1;
-            this.helicopterShootIterator++;
-            this.audios["helicopterShoot" + this.helicopterShootIterator.toString()].audio.play();
-        }
-        if (name === "tankShoot") {
-            if (this.tankShootIterator === 4) this.tankShootIterator = -1;
-            this.tankShootIterator++;
-            this.audios["tankShoot" + this.tankShootIterator.toString()].audio.play();
-        }
-        if (name === "enemyDeath") {
-            if (this.enemyDeathIterator === 4) this.enemyDeathIterator = -1;
-            this.enemyDeathIterator++;
-            this.audios["enemyDeath" + this.enemyDeathIterator.toString()].audio.play();
-        }
-        if (name === "lowFuel") this.audios.lowFuel.audio.play();
-        if (name === "tanking") this.audios.tanking.audio.play();
-        if (name === "tankingFull") this.audios.tankingFull.audio.play();
-        if (name === "absolute_win") this.audios.absolute_win.audio.play();
-    }
-
-    stopSound(name: string) {
-        this.audios[name].audio.pause();
+        sourceNode.connect(this.audioContext.destination);
+        sourceNode.start();
     }
 }

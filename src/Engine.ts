@@ -234,19 +234,7 @@ export default class Engine {
             player.minSpeedY
         );
         if (verticalAction === 0) player.speedY = 1;
-        switch (verticalAction) {
-            case 1: {
-                this.soundPlayer.playSound("fastFlight");
-                break;
-            };
-            case -1: {
-                this.soundPlayer.playSound("slowFlight");
-                break;
-            }
-            default: {
-                this.soundPlayer.playSound("flight");
-            }
-        }
+        this.soundPlayer.playFlightSound(player.speedY);
         if (shoot === 1) this.entityShoot(player);
     }
 

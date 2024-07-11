@@ -15,8 +15,6 @@ export default class SoundManager {
         { name: "absolute_win", path: "assets/sound/absolute_win.mp3", canPlayMultiple: false },
         { name: "boot", path: "assets/sound/boot.mp3", canPlayMultiple: false },
         { name: "enemyDeath", path: "assets/sound/enemyDeath.mp3", canPlayMultiple: true },
-        { name: "fastFlight", path: "assets/sound/fastFlight.mp3", canPlayMultiple: false },
-        { name: "slowFlight", path: "assets/sound/slowFlight.mp3", canPlayMultiple: false },
         { name: "flight", path: "assets/sound/flight.mp3", canPlayMultiple: false },
         { name: "helicopterShoot", path: "assets/sound/helicopterShoot.mp3", canPlayMultiple: true },
         { name: "playerDeath", path: "assets/sound/playerDeath.mp3", canPlayMultiple: false },
@@ -28,11 +26,11 @@ export default class SoundManager {
         { name: "flightStart", path: "assets/sound/flightStart.mp3", canPlayMultiple: false },
     ];
     private readonly audioContext = new AudioContext();
-    private readonly muteFlight = ["flight", "slowFlight", "fastFlight"];
+    private startAudio: AudioBufferSourceNode;
+    private flyingAudio: AudioBufferSourceNode | null;
     private buffers: {
         [key: string]: Sound;
     } = {};
-    isFlying: boolean;
 
     async load() {
         for (const src of this.sources) {
@@ -49,16 +47,41 @@ export default class SoundManager {
 
     playSound(name: string) {
         if (this.buffers[name].currentlyPlaying) return;
-        if (this.muteFlight.includes(name) && !this.isFlying) return;
         if (!this.buffers[name].canPlayMultiple) this.buffers[name].currentlyPlaying = true;
+        if (name === "playerDeath") this.stopFlightSound();
         
         const sourceNode = this.audioContext.createBufferSource();
         sourceNode.buffer = this.buffers[name].audio;
         sourceNode.onended = () => {
-            if (name === "flightStart") this.isFlying = true;
             this.buffers[name].currentlyPlaying = false;
         }
         sourceNode.connect(this.audioContext.destination);
         sourceNode.start();
+    }
+
+    playFlightSound(speed: number, start: boolean = false) {
+        if (this.flyingAudio && !start) {
+            this.flyingAudio.playbackRate.value = (speed + 1.2) / 2.2;
+            return;
+        }
+        if (!start) return;
+        const sourceNode = this.audioContext.createBufferSource();
+        sourceNode.buffer = this.buffers.flightStart.audio;
+        sourceNode.onended = () => {
+            this.flyingAudio = this.audioContext.createBufferSource();
+            this.flyingAudio.buffer = this.buffers.flight.audio;
+            this.flyingAudio.loop = true;
+            this.flyingAudio.connect(this.audioContext.destination);
+            this.flyingAudio.start();
+        };
+        this.startAudio = sourceNode;
+        sourceNode.connect(this.audioContext.destination);
+        sourceNode.start();
+    }
+
+    stopFlightSound() {
+        this.startAudio.onended = null;
+        this.startAudio.stop();
+        this.flyingAudio?.stop();
     }
 }

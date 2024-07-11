@@ -206,7 +206,7 @@ export default class GameManager {
             }),
             this.bridgeCenters[this.playerData.bridge - 1]
         );
-        this.soundPlayer.playSound("flightStart");
+        this.soundPlayer.playFlightSound(0, true);
         this.draw(0);
     }
 

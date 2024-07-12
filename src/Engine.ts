@@ -255,6 +255,8 @@ export default class Engine {
     updateEntities(delta: number) {
         const player = this.findPlayer();
         for (const entity of this.entities) {
+            const SAMEntity = entity as SAMEntity;
+            if (SAMEntity.hasBullet !== undefined && SAMEntity.update()) this.entityShoot(SAMEntity);
             if (entity.type !== "animation" && (!!player || this.showcasing) && this.distance + 600 > entity.positionY - entity.height) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
@@ -482,10 +484,7 @@ export default class Engine {
             case "bullet": {
                 const bullet = this.entities[indexToDestroy] as Bullet;
                 const owner = bullet.owner as SAMEntity;
-                this.entityShoot(owner);
-                if (bullet.exType === "tankBullet") {
-                    this.createAnimatedEntity(this.entities[indexToDestroy], bullet.getRemainingFrames());
-                }
+                owner.setShootCooldown();
                 break;
             }
             case "playerBullet": {
@@ -548,7 +547,7 @@ export default class Engine {
             case "tankBullet": {
                 const bullet = this.entities[indexToDestroy] as TankBullet;
                 const owner = bullet.owner as SAMEntity;
-                this.entityShoot(owner);
+                owner.setShootCooldown();
                 this.createAnimatedEntity(this.entities[indexToDestroy], bullet.getRemainingFrames());
                 break;
             }

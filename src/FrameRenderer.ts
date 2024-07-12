@@ -141,7 +141,7 @@ export default class FrameRenderer {
             this.interfaceContext.fillRect(0, 552, 800, 48);
             this.interfaceContext.fillStyle = "#c0c0c0";
             this.interfaceContext.fillText(
-                "RIVER RAID TM by Bartosz Sajecki            Copyright 2021                      Press ANY key to begin playing",
+                "RIVER RAID TM by Bartosz Sajecki            Copyright 2024                      Press ANY key to begin playing",
                 constants.WIDTH - ((elapsed / 5) % 4000),
                 580
             );

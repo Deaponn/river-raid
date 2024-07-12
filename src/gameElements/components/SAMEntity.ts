@@ -3,6 +3,7 @@ import Bullet from "../Bullet";
 
 export default class SAMEntity extends MovingEntity {
     hasBullet = false
+    shootCooldown = 0
     constructor(
         id: number,
         positionX: number,
@@ -15,6 +16,16 @@ export default class SAMEntity extends MovingEntity {
         movingY: MovingIndicator
     ) {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
+    }
+
+    update(): boolean {
+        this.shootCooldown--;
+        if (this.shootCooldown === 0) return true;
+        return false;
+    }
+
+    setShootCooldown() {
+        this.shootCooldown = 10;
     }
 
     createBullet(id: number): Bullet | null{

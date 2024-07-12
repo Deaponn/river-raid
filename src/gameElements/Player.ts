@@ -25,7 +25,7 @@ export default class Player extends SAMEntity {
     readonly maxSpeedX = 3
     readonly maxSpeedY = 2.5
     readonly minSpeedY = 0.5
-    speedY = 2
+    speedY = 1
     bulletId: number
     hasBullet: boolean = false;
     accellerationSpeed: number = 20;

@@ -233,7 +233,13 @@ export default class Engine {
             ), 
             player.minSpeedY
         );
-        if (verticalAction === 0) player.speedY = 1;
+        if (verticalAction === 0) {
+            const EPSILON = 0.06;
+            const STEP = 0.05;
+            if (player.speedY < 1 - EPSILON) player.speedY += STEP;
+            else if (player.speedY > 1 + EPSILON) player.speedY -= STEP;
+            else if (player.speedY !== 1) player.speedY = 1;
+        }
         this.soundPlayer.playFlightSound(player.speedY);
         if (shoot === 1) this.entityShoot(player);
     }

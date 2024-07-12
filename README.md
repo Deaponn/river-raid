@@ -79,8 +79,7 @@ Things I would like to work on in the near future
 - (feature) ~~add slowing under S key~~
 - (feature) add interpolation of player's bullets so they won't miss a target when the framerate is low
 - (QoL) ~~make flight sound loop sound nicer~~
-- (QoL) remake speed equations so they would be more smooth when stopping braking/accelerating
-- (QoL) make player unable to brake/accelerate during the takeoff (to level off startFlight and flight sounds)
+- (QoL) ~~remake speed equations so they would be more smooth when stopping braking/accelerating~~
 - (bugfix) fix the bug after restarting the whole game after loosing without refreshing the page
 - (bugfix) ~~implement bouncing of enemies when they collide with terrain since currently they sometimes get stuck~~
 - (bugfix) ~~fix shooting helicopter's bullets collision with the terrain~~

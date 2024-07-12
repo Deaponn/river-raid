@@ -60,10 +60,8 @@ export default class SoundManager {
     }
 
     playFlightSound(speed: number, start: boolean = false) {
-        if (this.flyingAudio && !start) {
-            this.flyingAudio.playbackRate.value = (speed + 1.2) / 2.2;
-            return;
-        }
+        if (this.flyingAudio) this.flyingAudio.playbackRate.value = (speed + 1.2) / 2.2;
+        if (this.startAudio) this.startAudio.playbackRate.value = (speed + 1.2) / 2.2;
         if (!start) return;
         const sourceNode = this.audioContext.createBufferSource();
         sourceNode.buffer = this.buffers.flightStart.audio;

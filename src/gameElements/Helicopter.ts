@@ -1,10 +1,9 @@
-import SAMEntity from "./components/SAMEntity";
-import { MovingIndicator } from "./components/MovingEntity";
+import MovingEntity, { MovingIndicator } from "./components/MovingEntity";
 
 const width = 30
 const height = 20
 
-export class Helicopter extends SAMEntity {
+export class Helicopter extends MovingEntity {
     readonly type = "helicopter";
     private currentMovingFrame = 0
     private counter = 0

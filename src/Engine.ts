@@ -256,7 +256,7 @@ export default class Engine {
         const player = this.findPlayer();
         for (const entity of this.entities) {
             const SAMEntity = entity as SAMEntity;
-            if (SAMEntity.hasBullet !== undefined && SAMEntity.update()) this.entityShoot(SAMEntity);
+            if (SAMEntity.hasBullet !== undefined && SAMEntity.update(delta)) this.entityShoot(SAMEntity);
             if (entity.type !== "animation" && (!!player || this.showcasing) && this.distance + 600 > entity.positionY - entity.height) entity.move?.(delta); // moving
             if (entity.type === "animation") (entity as AnimationEntity).updateState(delta);
             // updating death animation
@@ -490,7 +490,7 @@ export default class Engine {
             case "playerBullet": {
                 const player = this.findPlayer();
                 if (!player) return;
-                else player.hasBullet = false;
+                else player.setShootCooldown();
                 break;
             }
             case "animation": {

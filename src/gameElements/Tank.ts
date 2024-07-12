@@ -36,6 +36,8 @@ export class Tank extends SAMEntity {
             ((this.movingX === -1 && this.positionX < this.dontShootAfter) || (this.movingX === 1 && this.positionX > this.dontShootAfter))
         )
             return null;
+        if (this.speedX !== 0) return null;
+        this.hasBullet = true;
         const trajectory = getTrajectory(Math.abs(this.positionX - this.shootAt));
         const bullet = new TankBullet(id, this, this.positionX + (this.width / 2) * this.movingX, this.positionY, 8, 2, 5, 0, this.movingX, 0, 16, trajectory);
         return bullet;

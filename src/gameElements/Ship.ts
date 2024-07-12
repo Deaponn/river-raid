@@ -1,10 +1,9 @@
-import SAMEntity from "./components/SAMEntity";
-import { MovingIndicator } from "./components/MovingEntity";
+import MovingEntity, { MovingIndicator } from "./components/MovingEntity";
 
 const width = 64
 const height = 16
 
-export class Ship extends SAMEntity {
+export class Ship extends MovingEntity {
     readonly type = "ship";
     private currentMovingFrame = 0
     constructor(

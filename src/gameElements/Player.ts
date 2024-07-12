@@ -35,8 +35,13 @@ export default class Player extends SAMEntity {
         this.rightDirection = 2;
     }
 
+    override update(delta: number): boolean {
+        this.shootCooldown -= delta;
+        return false;
+    }
+
     override createBullet(id: number): null | PlayerBullet {
-        if (this.hasBullet) return null;
+        if (this.hasBullet || this.shootCooldown > 0) return null;
         this.hasBullet = true;
         this.bulletId = id
         return new PlayerBullet(id, this, this.positionX, this.positionY, bulletWidth, bulletHeight, 0, 15, 0, 1);

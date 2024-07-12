@@ -18,17 +18,19 @@ export default class SAMEntity extends MovingEntity {
         super(id, positionX, positionY, width, height, speedX, speedY, movingX, movingY);
     }
 
-    update(): boolean {
-        this.shootCooldown--;
-        if (this.shootCooldown === 0) return true;
+    update(delta: number): boolean {
+        this.shootCooldown = Math.max(0, this.shootCooldown - delta);
+        if (this.shootCooldown === 0 && this.hasBullet === false) return true;
         return false;
     }
 
     setShootCooldown() {
+        this.hasBullet = false;
         this.shootCooldown = 10;
     }
 
     createBullet(id: number): Bullet | null{
+        this.hasBullet = true;
         return new Bullet(id, this, this.positionX + (this.width / 2 * this.movingX), this.positionY, 28, 18, 5, 0, this.movingX, 0, 0)
     }
 }
